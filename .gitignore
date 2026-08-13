@@ -1,0 +1,20 @@
+# ===== 依赖 =====
+node_modules/
+
+# ===== 构建产物 / 打包输出 =====
+dist/
+*.exe
+*.blockmap
+win-unpacked/
+win-unpacked.tmp/
+win-unpacked.tmp.lock
+
+# ===== 项目数据（不删除，仅不纳入版本库）=====
+.workbuddy/
+
+# ===== 操作系统 / 编辑器 =====
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
