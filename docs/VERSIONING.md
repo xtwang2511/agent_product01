@@ -24,13 +24,18 @@
 
 ## 2. 分支模型（GitFlow-lite）
 
+> 命名约定说明：标准 GitFlow 使用斜杠命名（如 `release/vX.Y.0`、`feature/xxx`）。
+> 但**本工作环境（沙箱）的 git 对带斜杠的嵌套 ref 写入会被静默拦截**（exit 0 却不建 ref），
+> 故本项目统一采用**扁平命名**（连字符代替斜杠）。推送到标准 Git 主机时如需恢复斜杠形式，
+> 直接重命名分支即可，不影响流程语义。
+
 ```
-main            —— 稳定可发布主干，受保护，只接收来自 release/hotfix 的合并
-  └─ develop    —— 日常集成分支，接收 feature/* 合并
-       └─ feature/*   —— 单需求/单模块开发（命名：feature/agent-config）
-       └─ fix/*       —— 非紧急缺陷修复
-release/vX.Y.0  —— 发布候选分支，只做缺陷修复与版本号定稿，验收后合回 main+develop
-hotfix/vX.Y.Z   —— 线上紧急修复，从 main 拉出，修复后合回 main+develop 并打补丁 tag
+main              —— 稳定可发布主干，受保护，只接收来自 release/hotfix 的合并
+  └─ develop      —— 日常集成分支，接收 feature-xxx 合并
+       └─ feature-xxx   —— 单需求/单模块开发（例：feature-agent-config）
+       └─ fix-xxx       —— 非紧急缺陷修复
+release-X.Y.0     —— 发布候选分支，只做缺陷修复与版本号定稿，验收后合回 main+develop
+hotfix-X.Y.Z      —— 线上紧急修复，从 main 拉出，修复后合回 main+develop 并打补丁 tag
 ```
 
 **约定：**
@@ -50,7 +55,7 @@ hotfix/vX.Y.Z   —— 线上紧急修复，从 main 拉出，修复后合回 ma
 
 **发布检查清单（Release Checklist）：**
 1. `develop` 已通过自测与 Code Review；
-2. 从 `develop` 拉 `release/vX.Y.0`，更新版本号与 `CHANGELOG.md`；
+2. 从 `develop` 拉 `release-X.Y.0`（扁平命名），更新版本号与 `CHANGELOG.md`；
 3. 静态托管上传 `web` + 桌面端重新打包上传（同步 `BUILD_TAG`）；
 4. 代理 `cloudbase cloudrun deploy`（如涉及）；
 5. 冒烟验证（登录、对话、Agent 接入、跨端同步）；
