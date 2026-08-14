@@ -783,7 +783,7 @@
     // ===== Agent 云端代理（API Key 仅存于服务端，前端只调代理）=====
     const AGENT_BASE = "https://zhhs01-agent-295034-9-1304202737.sh.run.tcloudbase.com";
     const BOT_ID = "438168191460208640";
-    const BUILD_TAG = "2026-08-13-1800"; // 用于打破浏览器缓存
+    const BUILD_TAG = "2026-08-14-0905"; // 用于打破浏览器缓存
 
     // ===== CloudBase Auth（路由守卫 + 登录态）=====
     // 用户库托管在 CloudBase 原生 Auth：控制台「身份与登录」统一管理用户/登录方式/密钥。
@@ -1029,7 +1029,7 @@
         const sel = AGENT_LIST.find(a => a.id === AGENT_SELECTED_ID) || AGENT_LIST[0] || { botId: BOT_ID, endpoint: AGENT_BASE };
         const chatBase = sel.endpoint || AGENT_BASE;
         const history = currentMessages.slice(0, -1).map(m => ({ role: m.role, content: m.text }));
-        const doFetch = () => fetchWithTimeout(chatBase + "/chat", {
+        const doFetch = async () => fetchWithTimeout(chatBase + "/chat", {
           method: "POST",
           mode: "cors",
           cache: "no-store",
