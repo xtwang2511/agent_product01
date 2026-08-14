@@ -43,6 +43,16 @@ const DEFAULT_BOT_ID =
 const MAX_CONCURRENT_CHATS = Number(process.env.MAX_CONCURRENT_CHATS || 200);
 let activeChats = 0;
 
+// 上游（aiflowy）连接复用：默认每次 /chat 都新建 TLS 连接，重复对话每次多付一次 TCP+TLS 握手（~100-300ms）。
+// 用 keepAlive Agent 复用连接，显著降低（尤其是连续对话的）首字延迟。
+const upstreamAgent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 60000,
+  maxSockets: 64,
+  maxFreeSockets: 16,
+  timeout: 60000,
+});
+
 // ===== CloudBase 登录态校验（JWT）=====
 // Web / 桌面端经 CloudBase Web SDK 登录后，请求头携带 Authorization: Bearer <access_token>。
 // 代理在 CloudBase 运行环境内通过 node-sdk 自动获取运行角色凭证，校验该 token 解出 uid。
@@ -142,6 +152,7 @@ function handleChat(req, res) {
   let aborted = false;
   let counted = false;            // 是否已计入并发计数（用于对称回收）
   let upstream = null;
+  let pipedAny = false;           // 上游是否已透传任何数据（用于空流降级）
   const UPSTREAM_TIMEOUT_MS = 60000;
 
   const finish = () => {
@@ -203,32 +214,50 @@ function handleChat(req, res) {
       hostname: u.hostname,
       port: u.port || 443,
       path: u.pathname + u.search,
+      agent: upstreamAgent, // 复用 TLS 连接，降低连续对话的握手延迟
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + API_KEY,
         Accept: 'text/event-stream',
+        Connection: 'keep-alive',
       },
     };
 
     try {
       upstream = https.request(options, (upRes) => {
-        res.writeHead(upRes.statusCode || 200, {
-          'Content-Type': 'text/event-stream; charset=utf-8',
-          'Cache-Control': 'no-cache, no-transform',
-          Connection: 'keep-alive',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'X-Accel-Buffering': 'no',
-        });
-        // 上游流错误：响应头已发出，只能 end()，绝不能再次 writeHead
+        upRes.on('data', () => { pipedAny = true; });
+        // 上游返回错误状态码：不下发原始错误体，改发合法 ERROR 事件（响应头已提前下发，绝不再 writeHead）
+        if (upRes.statusCode && upRes.statusCode >= 400) {
+          pipedAny = true;
+          console.error('[zhhs_01] upstream http error', upRes.statusCode);
+          if (!res.writableEnded) {
+            try { res.write('data:' + JSON.stringify({ type: 'ERROR', payload: { message: '上游返回 ' + upRes.statusCode + '，请稍后重试' } }) + '\n\n'); } catch (_) {}
+            try { res.end(); } catch (_) {}
+          }
+          finish();
+          upRes.resume();
+          return;
+        }
+        // 上游流错误：响应头已发出，只能 end() 或下发合法 SSE 错误事件，绝不能再次 writeHead
         upRes.on('error', (err) => {
           console.error('[zhhs_01] upstream stream error:', err && err.message);
           finish();
-          if (!res.writableEnded) { try { res.end(); } catch (_) {} }
+          if (!res.writableEnded) {
+            if (!pipedAny) {
+              try { res.write('data:' + JSON.stringify({ type: 'ERROR', payload: { message: '上游连接中断，请稍后重试' } }) + '\n\n'); } catch (_) {}
+            }
+            try { res.end(); } catch (_) {}
+          }
         });
         upRes.on('end', () => {
           finish();
-          if (!res.writableEnded) res.end();
+          if (!res.writableEnded) {
+            if (!pipedAny) {
+              // 上游无数据即结束：下发合法 SSE 错误事件，避免客户端收到空流触发 Failed to fetch
+              try { res.write('data:' + JSON.stringify({ type: 'ERROR', payload: { message: '上游无响应，请稍后重试' } }) + '\n\n'); } catch (_) {}
+            }
+            res.end();
+          }
         });
         upRes.pipe(res);
       });
@@ -237,22 +266,61 @@ function handleChat(req, res) {
       return fail(res, 502, { error: 'upstream request failed: ' + e.message });
     }
 
+    // 立即下发 SSE 响应头（早于上游首字节），让客户端流式连接第一时间建立，降低首字感知延迟。
+    // 之后上游任何异常都统一以合法 SSE ERROR 事件收尾，绝不空流。
+    try {
+      if (!res.headersSent) {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache, no-transform',
+          Connection: 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'X-Accel-Buffering': 'no',
+        });
+      }
+      res.write(': connected\n\n'); // SSE 注释行：冲刷响应头，浏览器立即看到连接建立
+    } catch (e) {
+      finish();
+      return;
+    }
+
     // 上游超时保护：防止慢/挂连接长期占用 fd
     upstream.setTimeout(UPSTREAM_TIMEOUT_MS, () => {
       console.error('[zhhs_01] upstream timeout after', UPSTREAM_TIMEOUT_MS, 'ms');
       finish();
-      fail(res, 504, { error: 'upstream timeout' });
+      if (!res.writableEnded) {
+        if (!pipedAny) {
+          // 已写头但无数据：下发合法 SSE 错误事件再结束，避免空流
+          try { res.write('data:' + JSON.stringify({ type: 'ERROR', payload: { message: '上游响应超时，请稍后重试' } }) + '\n\n'); } catch (_) {}
+          try { res.end(); } catch (_) {}
+        } else { try { res.end(); } catch (_) {} }
+      }
       try { upstream.destroy(); } catch (_) {}
     });
 
     upstream.on('error', (err) => {
       console.error('[zhhs_01] upstream error:', err && err.message);
       finish();
-      fail(res, 502, { error: 'upstream error: ' + err.message });
+      if (!res.writableEnded) {
+        if (!pipedAny) {
+          try { res.write('data:' + JSON.stringify({ type: 'ERROR', payload: { message: '上游连接错误，请稍后重试' } }) + '\n\n'); } catch (_) {}
+          try { res.end(); } catch (_) {}
+        } else { try { res.end(); } catch (_) {} }
+      }
     });
 
-    upstream.write(payload);
-    upstream.end();
+    try {
+      upstream.write(payload);
+      upstream.end();
+    } catch (e) {
+      console.error('[zhhs_01] upstream write failed:', e && e.message);
+      if (!res.writableEnded) {
+        try { res.write('data:' + JSON.stringify({ type: 'ERROR', payload: { message: '上游写入失败，请稍后重试' } }) + '\n\n'); } catch (_) {}
+        try { res.end(); } catch (_) {}
+      }
+      finish();
+    }
   });
 }
 
@@ -272,13 +340,13 @@ const server = http.createServer(async (req, res) => {
     // 软鉴权：Web / 桌面端已通过 CloudBase 用户名密码登录作为访问闸门；
     // 此处仅尝试解析并记录 uid，校验失败不拦截（前端匿名密钥体系会使合法对话被 401 误拒）。
     const token = parseBearer(req);
-    if (token && cbApp) {
-      try {
-        const { uid } = await cbApp.auth().verifyToken(token);
-        console.log('[zhhs_01] chat auth ok, uid=', uid);
-      } catch (e) {
+    if (token && cbApp && cbApp.auth && typeof cbApp.auth().verifyToken === 'function') {
+      // 软鉴权仅打点，绝不阻塞首字：fire-and-forget，失败也不影响对话（结果不用于拦截请求）
+      cbApp.auth().verifyToken(token).then(function (r) {
+        console.log('[zhhs_01] chat auth ok, uid=', r && r.uid);
+      }).catch(function (e) {
         console.warn('[zhhs_01] chat token unverified (proceeding):', e && e.message);
-      }
+      });
     }
     return handleChat(req, res);
   }

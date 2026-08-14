@@ -31,7 +31,7 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
+    html, body { height: 100%; margin: 0; overflow-x: hidden; }
     body {
       font-family: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg);
@@ -172,11 +172,11 @@
     }
     .btn-ghost:hover { border-color: #d6d6d6; color: var(--text); }
 
-    .view-body { flex: 1; overflow-y: auto; padding: 32px; }
+    .view-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 32px; min-width: 0; }
 
     /* —— 首页 聊天 —— */
-    .chat-shell { flex: 1; min-height: 0; display: flex; flex-direction: column; max-width: 920px; width: 100%; margin: 0 auto; }
-    .messages { flex: 1; overflow-y: auto; padding: 32px 0 16px; display: flex; flex-direction: column; gap: 18px; }
+    .chat-shell { flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; margin: 0; min-width: 0; }
+    .messages { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 32px 0 16px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
     .hero { text-align: center; margin: auto 0; padding: 24px; }
     .hero h1 { font-size: 28px; font-weight: 700; margin: 0 0 12px; letter-spacing: -0.4px; }
     .hero p { font-size: 15px; color: var(--text-2); line-height: 1.7; max-width: 560px; margin: 0 auto; }
@@ -223,11 +223,34 @@
       background: var(--brand); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
       transition: opacity .15s, background .15s, color .15s;
     }
+
+    /* —— 底部状态：思考中 / 本次无输出（小字，位于对话结尾处）—— */
+    .thinking-hint { flex: 0 0 auto; display: none; align-items: center; gap: 6px; padding: 2px 4px 8px; font-size: 12.5px; color: var(--text-3); }
+    .thinking-hint.show { display: flex; }
+    .thinking-hint .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-3); animation: thbounce 1.2s infinite ease-in-out both; }
+    .thinking-hint .dot:nth-child(2) { animation-delay: .18s; }
+    .thinking-hint .dot:nth-child(3) { animation-delay: .36s; }
+    @keyframes thbounce { 0%, 80%, 100% { transform: scale(.5); opacity: .45; } 40% { transform: scale(1); opacity: 1; } }
+    /* —— 对话结尾：生成文件汇总区（代码/结果文件，可预览+下载，不在气泡内显示）—— */
+    .conv-files { flex: 0 0 auto; display: none; flex-direction: column; gap: 6px; margin: 4px 0 10px; max-height: 220px; overflow-y: auto; }
+    .conv-files.show { display: flex; }
+    .conv-files .cf-head { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+    .conv-files .cf-head .cf-caret { color: var(--text-3); font-size: 11px; transition: transform .15s; }
+    .conv-files.collapsed .cf-head .cf-caret { transform: rotate(-90deg); }
+    .conv-files .cf-count { font-size: 11px; font-weight: 600; color: var(--text-3); background: #f1f1f2; border-radius: 999px; padding: 1px 8px; }
+    .conv-files .cf-dlall { margin-left: auto; border: 1px solid var(--border); background: #fff; color: var(--text-2); font-size: 11.5px; border-radius: 8px; padding: 3px 9px; cursor: pointer; }
+    .conv-files .cf-dlall:hover { border-color: var(--brand); color: var(--text); }
+    .conv-files.collapsed .cf-list { display: none; }
+    .cf-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cf-item { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1px solid var(--border); border-radius: 999px; background: #fff; padding: 3px 5px 3px 10px; }
+    .cf-item .cf-name { font-size: 12px; color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; max-width: 220px; cursor: pointer; }
+    .cf-item .cf-name:hover { color: var(--brand); text-decoration: underline; }
+    .empty-hint { font-size: 13px; color: var(--text-3); padding: 2px 0; }
     .send-dark:disabled { opacity: .5; cursor: not-allowed; }
     .send-dark.stopping { background: #FEF2F2; color: #D33; }
     .send-dark.stopping:hover { background: #FBE3E3; }
 
-    .row { display: flex; gap: 10px; align-items: flex-start; max-width: 100%; }
+    .row { display: flex; gap: 10px; align-items: flex-start; max-width: 100%; min-width: 0; }
     .row.user { flex-direction: row-reverse; }
     .avatar {
       width: 34px; height: 34px; border-radius: 9px; flex: 0 0 auto;
@@ -238,19 +261,42 @@
     .avatar.me { background: #b7bdc9; }
     .bubble {
       max-width: 76%; padding: 12px 15px; border-radius: 15px;
-      line-height: 1.65; font-size: 15px; white-space: pre-wrap; word-break: break-word;
+      line-height: 1.65; font-size: 15px; white-space: pre-wrap; word-break: break-word; min-width: 0;
     }
-    .row.bot .bubble { background: #fff; border: 1px solid var(--border); border-top-left-radius: 4px; }
+    .row.bot .bubble { background: #fff; border: 1px solid var(--border); border-top-left-radius: 4px; width: auto; max-width: 100%; min-width: 0; }
     .row.user .bubble { background: #F2F3F5; color: var(--text); border-top-right-radius: 4px; }
     .bubble .cursor { display: inline-block; width: 7px; height: 16px; background: var(--text-3); margin-left: 2px; vertical-align: -2px; animation: blink 1s steps(2,start) infinite; }
     @keyframes blink { 50% { opacity: 0; } }
     .bubble .answer { white-space: pre-wrap; word-break: break-word; }
+    /* 终态 Markdown 渲染（marked + github-markdown-css）：块级正常排版，代码块横向滚动 */
+    .bubble .answer.markdown-body { white-space: normal; overflow-wrap: anywhere; font-size: 14px; line-height: 1.65; padding: 0; color: var(--text); }
+    .bubble .answer.markdown-body > :first-child { margin-top: 0; }
+    .bubble .answer.markdown-body > :last-child { margin-bottom: 0; }
+    .bubble .answer.markdown-body p { margin: 0 0 8px; }
+    .bubble .answer.markdown-body ul, .bubble .answer.markdown-body ol { margin: 0 0 8px; padding-left: 22px; }
+    .bubble .answer.markdown-body h1, .bubble .answer.markdown-body h2, .bubble .answer.markdown-body h3,
+    .bubble .answer.markdown-body h4 { margin: 12px 0 6px; line-height: 1.3; }
+    .bubble .answer.markdown-body h1 { font-size: 19px; } .bubble .answer.markdown-body h2 { font-size: 17px; }
+    .bubble .answer.markdown-body h3 { font-size: 15.5px; } .bubble .answer.markdown-body h4 { font-size: 14.5px; }
+    .bubble .answer.markdown-body pre { margin: 8px 0; border-radius: 8px; max-width: 100%; overflow-x: auto; }
+    .bubble .answer.markdown-body code { font-size: 12.5px; }
+    .bubble .answer.markdown-body table { display: block; width: max-content; max-width: 100%; overflow-x: auto; }
+    .bubble .answer.markdown-body img { max-width: 100%; }
+    .bubble .answer.markdown-body div.mermaid { text-align: center; margin: 8px 0; background: #fff; border: 1px solid #E5E5E5; border-radius: 8px; padding: 8px; overflow: auto; }
+    .bubble .answer.markdown-body .mermaid svg { max-width: 100%; height: auto; }
+    .bubble .think-body.markdown-body { white-space: normal; overflow-wrap: anywhere; font-size: 13px; padding: 0; }
     .bubble .think { margin-bottom: 10px; border-left: 3px solid #d8dce4; background: #f6f7f9; border-radius: 8px; padding: 8px 12px; }
     .bubble .think-head { font-size: 12px; color: #6b7075; cursor: pointer; user-select: none; margin-bottom: 4px; font-weight: 500; }
     .bubble .think-head::after { content: " ▾"; opacity: .6; }
     .bubble .think.collapsed .think-head::after { content: " ▸"; }
     .bubble .think.collapsed .think-body { display: none; }
     .bubble .think-body { font-size: 13px; color: #8a909a; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    /* 用户输入气泡内：仅显示附件名，不显示文件内容（Fix5-输入） */
+    .bubble .msg-files { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .bubble .msg-file-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+      background: rgba(0,0,0,.04); border: 1px solid var(--border); border-radius: 10px; padding: 5px 10px; font-size: 12px; color: var(--text-2); }
+    .bubble .msg-file-chip .nm { font-weight: 500; color: var(--text); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bubble .msg-file-chip .at { color: var(--text-3); }
 
     .error-box { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c2c4; border-radius: 10px; padding: 10px 14px; font-size: 13px; }
 
@@ -532,7 +578,7 @@
 
       <!-- 视图：新建任务 / 主页 -->
       <section class="view active" id="view-home">
-        <div class="view-body" style="padding:0; display:flex;">
+        <div class="view-body" style="padding:24px 32px; display:flex; gap:20px; align-items:stretch; justify-content:center;">
           <div class="chat-shell">
             <div class="messages" id="homeMessages">
               <div class="hero" id="homeHero">
@@ -544,6 +590,13 @@
                   <span class="chip" data-q="你能帮我做什么？">你能做什么</span>
                 </div>
               </div>
+            </div>
+
+            <!-- 对话结尾：底部状态（思考中 / 无输出）+ 生成文件汇总区（代码/结果文件，不在气泡内显示） -->
+            <div class="thinking-hint" id="thinkingHint"></div>
+            <div class="conv-files" id="conversationFiles">
+              <div class="cf-head" id="cfHead"><span>生成文件</span><span class="cf-count" id="cfCount">0</span><span class="cf-caret">▾</span><button class="cf-dlall" id="cfDlAll" type="button">全部下载</button></div>
+              <div class="cf-list" id="cfList"></div>
             </div>
 
             <div class="composor">
@@ -784,12 +837,21 @@
   <script src="lib/pdf.min.js"></script>
   <script src="lib/mammoth.browser.min.js"></script>
   <script src="lib/xlsx.full.min.js"></script>
-  <script src="lib/jszip.min.js"></script>
-  <script>
+    <script src="lib/jszip.min.js"></script>
+    <link rel="stylesheet" href="lib/github-markdown.min.css" />
+    <link rel="stylesheet" href="lib/highlight.github.min.css" />
+    <script src="lib/marked.min.js"></script>
+    <script src="lib/purify.min.js"></script>
+    <script src="lib/highlight.min.js"></script>
+    <link rel="stylesheet" href="lib/katex.min.css" />
+    <script src="lib/mermaid.min.js"></script>
+    <script src="lib/katex.min.js"></script>
+    <script src="lib/auto-render.min.js"></script>
+    <script>
     // ===== Agent 云端代理（API Key 仅存于服务端，前端只调代理）=====
     const AGENT_BASE = "https://zhhs01-agent-295034-9-1304202737.sh.run.tcloudbase.com";
     const BOT_ID = "438168191460208640";
-    const BUILD_TAG = "2026-08-14-0905"; // 用于打破浏览器缓存
+    const BUILD_TAG = "2026-08-14-1716"; // 用于打破浏览器缓存
 
     // ===== CloudBase Auth（路由守卫 + 登录态）=====
     // 用户库托管在 CloudBase 原生 Auth：控制台「身份与登录」统一管理用户/登录方式/密钥。
@@ -963,6 +1025,7 @@
     let conversationId = "web-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
     let busy = false;
     let chatAbort = null; // 当前对话流的中断控制器（Fix4：发送中可点「中断」）
+    let currentMessages = []; // 当前会话消息缓存（与 conversations[id].messages 同步）
     function setSendUI() {
       if (busy) {
         sendBtn.textContent = "中断";
@@ -978,6 +1041,198 @@
     function scrollBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
     // 状态指示已合并到 topbar 的 Agent 选择器 chip（zhhs_01 即代表已就绪），此处保留 noop 以兼容 sendHome 旧调用
     function setHomeStatus(_ok, _text) { /* noop */ }
+    // ============================================================
+    // 输出代码落盘（Fix5-输出）：把 AI 回复里的 ```代码块 抽成可下载文件，
+    // 气泡内只留「📄 文件名 · 语言 · 行数 下载」卡片，不显示源码本身。
+    // ============================================================
+    // 把文本切成 [{type:"text"|"code", content, lang}] 片段（纯函数，无副作用）
+    // Markdown 渲染（marked 解析 + DOMPurify 防 XSS）
+    let _markedConfigured = false;
+    // 公式占位（私有区字符，避免被 marked / DOMPurify 破坏）
+    const MATH_OPEN = "", MATH_CLOSE = "";
+    let _mathStore = [];
+    function protectMath(text) {
+      _mathStore = [];
+      // 块级 $$...$$
+      text = text.replace(/\$\$([\s\S]+?)\$\$/g, function (m) { _mathStore.push(m); return MATH_OPEN + (_mathStore.length - 1) + MATH_CLOSE; });
+      // 行内 $...$（不含换行、不含内部 $）
+      text = text.replace(/\$([^$\n]+?)\$/g, function (m) { _mathStore.push(m); return MATH_OPEN + (_mathStore.length - 1) + MATH_CLOSE; });
+      return text;
+    }
+    function restoreMath(root) {
+      if (!root) return;
+      const re = new RegExp(MATH_OPEN + "(\\d+)" + MATH_CLOSE, "g");
+      const walk = function (node) {
+        if (node.nodeType === 3) {
+          const t = node.nodeValue;
+          if (t.indexOf(MATH_OPEN) === -1) return;
+          const parts = []; let last = 0, m;
+          re.lastIndex = 0;
+          while ((m = re.exec(t)) !== null) {
+            if (m.index > last) parts.push(document.createTextNode(t.slice(last, m.index)));
+            parts.push(document.createTextNode(_mathStore[+m[1]] || ""));
+            last = re.lastIndex;
+          }
+          if (last < t.length) parts.push(document.createTextNode(t.slice(last)));
+          const p = node.parentNode;
+          parts.forEach(function (x) { p.insertBefore(x, node); });
+          p.removeChild(node);
+        } else if (node.nodeType === 1 && !/^(PRE|CODE|SCRIPT|STYLE)$/.test(node.tagName)) {
+          Array.prototype.slice.call(node.childNodes).forEach(walk);
+        }
+      };
+      walk(root);
+    }
+    function renderMath(root) {
+      if (!root || typeof renderMathInElement === "undefined") return;
+      try {
+        renderMathInElement(root, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false }
+          ],
+          ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+          throwOnError: false
+        });
+      } catch (e) {}
+    }
+    let _mermaidReady = false;
+    function renderMermaid(root) {
+      if (!root || typeof mermaid === "undefined") return;
+      try {
+        if (!_mermaidReady) { mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "default" }); _mermaidReady = true; }
+      } catch (e) {}
+      const codes = root.querySelectorAll("pre > code.language-mermaid");
+      codes.forEach(function (code) {
+        const pre = code.parentNode;
+        const src = code.textContent;
+        const div = document.createElement("div");
+        div.className = "mermaid";
+        div.textContent = src;
+        if (pre && pre.parentNode) pre.parentNode.replaceChild(div, pre);
+      });
+      const nodes = root.querySelectorAll("div.mermaid");
+      if (nodes.length) {
+        try { mermaid.run({ nodes: Array.prototype.slice.call(nodes) }); } catch (e) {}
+      }
+    }
+    function renderMarkdown(text, opts) {
+      opts = opts || {};
+      if (!text) return "";
+      try {
+        if (!_markedConfigured && typeof marked !== "undefined") {
+          try { marked.use({ breaks: true, gfm: true }); } catch (e) {}
+          _markedConfigured = true;
+        }
+        const src = opts.math === false ? text : protectMath(text);
+        const html = marked.parse(src);
+        return DOMPurify.sanitize(html);
+      } catch (e) {
+        return escapeHtml(text);
+      }
+    }
+    // 代码块只做语法高亮（不额外挂下载按钮，保持对话区干净）
+    function enhanceCodeBlocks(root) {
+      if (!root) return;
+      root.querySelectorAll("pre").forEach((pre) => {
+        const code = pre.querySelector("code");
+        if (!code) return;
+        try { if (window.hljs) window.hljs.highlightElement(code); } catch (e) {}
+      });
+    }
+    // 把回答拆成「气泡内显示（文字+流程图）」与「底部文件区（代码/结果文件）」两部分：
+    // mermaid 视为流程图留在气泡内联渲染；其余代码/结果文件抽到对话结尾的文件区，不在对话框中显示。
+    const CODE_EXT = { python:"py", py:"py", javascript:"js", js:"js", jsx:"jsx", typescript:"ts", ts:"ts", tsx:"tsx",
+      html:"html", htm:"html", xml:"xml", json:"json", jsonl:"json", yaml:"yml", yml:"yml", toml:"toml", ini:"ini", cfg:"cfg", conf:"conf",
+      css:"css", scss:"scss", less:"less", sql:"sql", bash:"sh", sh:"sh", shell:"sh", zsh:"sh", powershell:"ps1", ps1:"ps1",
+      java:"java", go:"go", golang:"go", rust:"rs", c:"c", h:"h", cpp:"cpp", "c++":"cpp", cc:"cpp", csharp:"cs", cs:"cs",
+      php:"php", ruby:"rb", rb:"rb", lua:"lua", kotlin:"kt", swift:"swift", dart:"dart", r:"r", scala:"scala", perl:"pl",
+      vue:"vue", svelte:"svelte", dockerfile:"dockerfile", makefile:"mk", cmake:"cmake", markdown:"md", md:"md", txt:"txt", text:"txt", plaintext:"txt" };
+    function splitAnswerToBubbleAndFiles(answer) {
+      const files = [];
+      let bubble = "";
+      const fenceRe = /```([^\n`]*)\n([\s\S]*?)```/g;
+      let last = 0, m;
+      while ((m = fenceRe.exec(answer || "")) !== null) {
+        bubble += (answer || "").slice(last, m.index);
+        const lang = (m[1] || "").trim().toLowerCase();
+        const content = m[2];
+        if (lang === "mermaid") {
+          bubble += "```mermaid\n" + content + "```"; // 流程图留在气泡内联
+        } else if (content.trim()) {
+          files.push({ lang: lang || "text", ext: CODE_EXT[lang] || "txt", content: content });
+        }
+        last = fenceRe.lastIndex;
+      }
+      bubble += (answer || "").slice(last);
+      return { bubble: bubble.trim(), files: files };
+    }
+    function downloadText(name, content) {
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+    }
+    // 从代码首行注释/文件名提示推断更友好的文件名；否则 block_N.ext 兜底
+    function deriveFileName(content, ext) {
+      const head = (content || "").split("\n").slice(0, 5).join("\n");
+      let mm = head.match(/(?:^|[^A-Za-z0-9])([\w./\-]+\.[A-Za-z0-9]{1,5})/);
+      if (!mm) mm = head.match(/filename:\s*([\w./\-]+\.[A-Za-z0-9]{1,5})/i);
+      return mm ? mm[1] : ("block_" + (++_fileSeq) + "." + ext);
+    }
+    // 对话结尾的文件区：汇总本次会话所有 AI 生成的代码/结果文件（按内容去重），可预览+下载
+    let conversationFilesArr = [];   // {key,name,ext,lang,label,content}
+    let _fileSeq = 0;
+    function addConversationFile(f) {
+      const key = "f:" + f.content; // 按内容去重，避免切换会话重放/多次渲染时重复堆积
+      if (conversationFilesArr.some(function (x) { return x.key === key; })) return;
+      const name = deriveFileName(f.content, f.ext);
+      conversationFilesArr.push({ key: key, name: name, ext: f.ext, lang: f.lang, label: (f.lang || "text").toUpperCase(), content: f.content });
+    }
+    function renderConversationFiles() {
+      const wrap = document.getElementById("conversationFiles");
+      const list = document.getElementById("cfList");
+      const cnt = document.getElementById("cfCount");
+      if (!wrap || !list) return;
+      if (cnt) cnt.textContent = String(conversationFilesArr.length);
+      wrap.classList.toggle("show", conversationFilesArr.length > 0);
+      list.innerHTML = "";
+      conversationFilesArr.forEach(function (a) {
+        const item = document.createElement("div"); item.className = "cf-item";
+        const nm = document.createElement("span"); nm.className = "cf-name"; nm.textContent = a.name; nm.title = a.name + "（点击下载）";
+        nm.addEventListener("click", function () { downloadText(a.name, a.content); });
+        item.appendChild(nm);
+        list.appendChild(item);
+      });
+    }
+    // 文件区头部折叠 / 全部下载
+    const cfHeadEl = document.getElementById("cfHead");
+    const cfDlAllEl = document.getElementById("cfDlAll");
+    if (cfHeadEl) cfHeadEl.addEventListener("click", function (e) {
+      if (e.target === cfDlAllEl) return; // 全部下载按钮自身不触发折叠
+      const wrap = document.getElementById("conversationFiles");
+      if (wrap) wrap.classList.toggle("collapsed");
+    });
+    if (cfDlAllEl) cfDlAllEl.addEventListener("click", function (e) {
+      e.stopPropagation();
+      conversationFilesArr.forEach(function (a) { downloadText(a.name, a.content); });
+    });
+    // 底部状态：thinking=思考中…（带跳动圆点） / empty=本次无输出 / 其余隐藏
+    function setThinkingHint(state) {
+      const el = document.getElementById("thinkingHint");
+      if (!el) return;
+      if (state === "thinking") {
+        el.innerHTML = '思考中<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+        el.classList.add("show");
+      } else if (state === "empty") {
+        el.textContent = "（本次无输出）";
+        el.classList.add("show");
+      } else {
+        el.classList.remove("show");
+        el.innerHTML = "";
+      }
+    }
     function splitThinking(text) {
       const t = text || "";
       const thinkParts = [];
@@ -996,7 +1251,7 @@
       if (!think) {
         think = document.createElement("div"); think.className = "think";
         const th = document.createElement("div"); th.className = "think-head";
-        const tb = document.createElement("div"); tb.className = "think-body";
+        const tb = document.createElement("div"); tb.className = "think-body markdown-body";
         think.appendChild(th); think.appendChild(tb);
         ans = document.createElement("div"); ans.className = "answer";
         bubble.appendChild(think); bubble.appendChild(ans);
@@ -1004,9 +1259,39 @@
       const th = think.querySelector(".think-head");
       const tb = think.querySelector(".think-body");
       th.textContent = streaming ? "🤔 思考中…" : "🧠 思考过程（点击展开）";
-      tb.textContent = thinking;
+      tb.innerHTML = thinking ? renderMarkdown(thinking) : "";
+      if (thinking) { restoreMath(tb); renderMermaid(tb); renderMath(tb); }
       think.style.display = thinking ? "" : "none";
-      ans.textContent = answer;
+      // 把回答拆成「气泡内（文字+流程图）」与「底部文件区（代码/结果文件）」；
+      // mermaid 留在气泡内联渲染，其余代码块抽到对话结尾，不在对话框中显示。
+      const parsed = splitAnswerToBubbleAndFiles(answer);
+      if (streaming) {
+        // 流式实时 Markdown 渲染（恢复实时感），但做节流：每个动画帧最多渲染一次，
+        // 避免逐 token 整段重跑 marked+DOMPurify+高亮的 O(n²) 卡顿；mermaid/katex 留到终态渲染。
+        ans._raw = parsed.bubble; // 仅文字+流程图进气泡，代码块不进对话框
+        if (!ans._scheduled) {
+          ans._scheduled = true;
+          const _render = function () {
+            ans._scheduled = false;
+            if (ans._raw == null) return;
+            ans.innerHTML = renderMarkdown(ans._raw, { math: false });
+            ans.classList.add("markdown-body");
+            enhanceCodeBlocks(ans); // 仅语法高亮
+          };
+          if (typeof requestAnimationFrame === "function") requestAnimationFrame(_render);
+          else setTimeout(_render, 60);
+        }
+      } else {
+        ans._raw = null; ans._scheduled = false; // 取消任何挂起的流式渲染帧，避免覆盖终态完整渲染
+        ans.innerHTML = renderMarkdown(parsed.bubble); // 终态：Markdown 渲染（标题/表格/列表/公式/流程图）
+        ans.classList.add("markdown-body");
+        restoreMath(ans);
+        renderMermaid(ans);     // ```mermaid 转换为流程图（留在气泡内联）
+        enhanceCodeBlocks(ans); // 代码块语法高亮
+        renderMath(ans);        // $...$ / $$...$$ 公式
+        parsed.files.forEach(addConversationFile); // 代码/结果文件汇总到对话结尾的文件区
+        renderConversationFiles();
+      }
       if (!streaming && thinking) {
         think.classList.add("collapsed");
         if (!th.dataset.bound) {
@@ -1032,6 +1317,17 @@
         updateBotBubble(bubble, sp.thinking, sp.answer, opts.streaming === true);
       } else {
         bubble.textContent = text || "";
+        if (opts.files && opts.files.length) {
+          const fc = document.createElement("div");
+          fc.className = "msg-files";
+          opts.files.forEach(f => {
+            const c = document.createElement("div");
+            c.className = "msg-file-chip";
+            c.innerHTML = '<span class="nm">' + escapeHtml(f.name) + '</span><span class="at">' + escapeHtml(f.tag || "") + '</span>';
+            fc.appendChild(c);
+          });
+          bubble.appendChild(fc);
+        }
       }
       row.appendChild(bubble);
       messagesEl.appendChild(row);
@@ -1039,15 +1335,20 @@
       return bubble;
     }
 
-    async function sendHome(text) {
-      if (busy || !text.trim()) return;
+    // displayText：气泡显示与历史记录用（不含文件全文）
+    // promptText：实际发给模型的 prompt（含附件内容）；缺省回退 displayText
+    async function sendHome(displayText, promptText, files) {
+      const text = (displayText || "").trim();
+      const prompt = (promptText && promptText.trim()) ? promptText : text;
+      if (busy || !text) return;
       busy = true; setSendUI();
       chatAbort = new AbortController();
-      addMessage("user", text);
+      addMessage("user", text, { files: files || [] });
       currentMessages.push({ role: "user", text });
       pushConversationItem(text);
       renderConvList();
       const botBubble = addMessage("bot", "", { streaming: true });
+      setThinkingHint("thinking"); // 等待首字：底部小字「思考中…」
 
       const t0 = performance.now();
       try {
@@ -1060,13 +1361,25 @@
           cache: "no-store",
           headers: Object.assign({ "Content-Type": "application/json", "Accept": "text/event-stream" }, await getAuthHeaders()),
           signal: chatAbort.signal,
-          body: JSON.stringify({ botId: sel.botId || BOT_ID, prompt: text, conversationId, history })
+          body: JSON.stringify({ botId: sel.botId || BOT_ID, prompt: prompt, conversationId, history })
         }, 60000);
-        let resp = await doFetch();
+        // 网络层失败自动重试（压制偶发 RST / 传输层抖动）：最多额外重试 2 次，指数退避
+        let resp = null, attempts = 0;
+        while (attempts < 3) {
+          attempts++;
+          try {
+            resp = await doFetch();
+            break;                         // 拿到 HTTP 响应（含 401/5xx），交给下方业务判断
+          } catch (netErr) {
+            if (chatAbort && chatAbort.signal.aborted) throw netErr; // 用户点「中断」，立即终止
+            if (attempts >= 3) throw netErr;                          // 重试耗尽，抛出原错误
+            await new Promise(r => setTimeout(r, 500 * attempts));    // 退避后重试
+          }
+        }
         // 令牌可能过期：刷新会话后重试一次，避免用户手动重发
         if (resp.status === 401) {
           try { await cbAuth.getSession(); } catch (e) {}
-          resp = await doFetch();
+          try { resp = await doFetch(); } catch (e) { /* 二次刷新也抖动则交由下方统一报错 */ }
         }
         if (!resp.ok) {
           if (resp.status === 401) {
@@ -1079,7 +1392,7 @@
         }
         const reader = resp.body.getReader();
         const decoder = new TextDecoder("utf-8");
-        let buffer = "", fullText = "";
+        let buffer = "", fullText = "", firstContent = false;
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -1100,6 +1413,7 @@
             }
             if (payload.type === "MESSAGE" && payload.payload && payload.payload.delta) {
               fullText += payload.payload.delta;
+              if (!firstContent && fullText.trim()) { firstContent = true; setThinkingHint("none"); } // 首字到达，撤掉「思考中」
               const sp = splitThinking(fullText);
               updateBotBubble(botBubble, sp.thinking, sp.answer, true);
               scrollBottom();
@@ -1108,7 +1422,9 @@
         }
         const fin = splitThinking(fullText);
         updateBotBubble(botBubble, fin.thinking, fin.answer, false);
-        if (!fullText) botBubble.querySelector(".answer").textContent = "（暂无内容返回）";
+        // 终态：无任何文字/思考输出时，底部小字提示「本次无输出」；否则撤掉「思考中」
+        if (!fin.answer.trim() && !fin.thinking.trim()) setThinkingHint("empty");
+        else setThinkingHint("none");
         currentMessages.push({ role: "bot", text: fullText });
         persistCurrentMessages();
         setHomeStatus(true, "已连接");
@@ -1120,6 +1436,7 @@
             const cur = (ans.textContent || "").trim();
             ans.textContent = cur ? (cur + "\n（已停止生成）") : "（已停止生成）";
           }
+          setThinkingHint("none");
           setHomeStatus(false, "已停止");
           return;
         }
@@ -1140,6 +1457,7 @@
         box.textContent = diag;
         botBubble.parentNode.insertBefore(box, botBubble);
         botBubble.textContent = "（连接异常）";
+        setThinkingHint("none");
         setHomeStatus(false, "连接异常");
         // 控制台也打一份，便于开发者排查
         console.error("[zhhs_01 chat]", err, { agentBase: AGENT_BASE, loc: location.href });
@@ -1361,6 +1679,8 @@
       const conv = list.find(c => c.id === id);
       conversationId = id;
       messagesEl.innerHTML = "";
+      conversationFilesArr = []; renderConversationFiles(); setThinkingHint("none"); // 切换会话：清空底部文件区与思考中
+      const _cfw1 = document.getElementById("conversationFiles"); if (_cfw1) _cfw1.classList.remove("collapsed");
       if (conv && Array.isArray(conv.messages) && conv.messages.length) {
         // 回放当时真实的对话结果
         conv.messages.forEach(m => addMessage(m.role, m.text));
@@ -1406,12 +1726,15 @@
     function newConversation() {
       conversationId = "web-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
       messagesEl.innerHTML = "";
+      conversationFilesArr = []; renderConversationFiles(); setThinkingHint("none"); // 新建会话：清空底部文件区与思考中
+      const _cfw2 = document.getElementById("conversationFiles"); if (_cfw2) _cfw2.classList.remove("collapsed");
       currentMessages = [];
       messagesEl.appendChild(buildHero());
       inputEl.value = "";
       autoResize();
       renderConvList();
     }
+
     function renderDataManage() {
       const aEl = document.getElementById("dmArchived");
       const sEl = document.getElementById("dmShared");
@@ -1476,10 +1799,11 @@
       msgs.forEach(m => {
         const isBot = m.role === "bot";
         const sp = splitThinking(m.text || "");
-        bodyHtml += '<div class="row ' + (isBot ? "bot" : "user") + '"><div class="avatar ' + (isBot ? "bot" : "me") + '">' + (isBot ? "AI" : "我") + '</div><div class="bubble"><div class="answer">' + escapeHtml(sp.answer) + '</div></div></div>';
+        bodyHtml += '<div class="row ' + (isBot ? "bot" : "user") + '"><div class="avatar ' + (isBot ? "bot" : "me") + '">' + (isBot ? "AI" : "我") + '</div><div class="bubble"><div class="answer markdown-body">' + renderMarkdown(sp.answer) + '</div></div></div>';
       });
       bodyHtml += '</div>';
       box.innerHTML = bodyHtml;
+      box.querySelectorAll(".answer").forEach(function (el) { restoreMath(el); renderMermaid(el); enhanceCodeBlocks(el); renderMath(el); });
       mask.appendChild(box);
       document.body.appendChild(mask);
       const close = () => { mask.remove(); history.replaceState(null, "", location.pathname); };
@@ -1967,10 +2291,14 @@
       renderAttach();
     });
 
-    // 发送时把附件内容附到 prompt（覆盖原 handleSend）
+    // 发送：附件内容只进发给模型的 prompt，气泡里只显示输入文字 + 附件名（Fix5-输入）
     function handleSend() {
       const text = inputEl.value.trim();
       if (!text && attachments.length === 0) return;
+      const displayFiles = attachments.map(a => ({
+        name: a.name,
+        tag: a.note || (a.type === "image" ? "图片" : a.type === "binary" ? "二进制" : "文件")
+      }));
       let fullPrompt = text;
       if (attachments.length) {
         const blocks = attachments.map(a => {
@@ -1985,9 +2313,11 @@
         });
         fullPrompt += "\n\n以下是附带的本地文件内容，请结合它们理解任务：\n" + blocks.join("\n\n");
       }
+      const displayText = text || "（已附 " + attachments.length + " 个文件）";
+      const sent = attachments.slice();
       inputEl.value = ""; inputEl.style.height = "auto";
       attachments = []; renderAttach();
-      sendHome(fullPrompt);
+      sendHome(displayText, fullPrompt, sent);
     }
 
 
