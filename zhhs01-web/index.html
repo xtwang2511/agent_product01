@@ -221,9 +221,11 @@
     .send-dark {
       height: 42px; padding: 0 22px; border: none; border-radius: 12px;
       background: var(--brand); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
-      transition: opacity .15s;
+      transition: opacity .15s, background .15s, color .15s;
     }
     .send-dark:disabled { opacity: .5; cursor: not-allowed; }
+    .send-dark.stopping { background: #FEF2F2; color: #D33; }
+    .send-dark.stopping:hover { background: #FBE3E3; }
 
     .row { display: flex; gap: 10px; align-items: flex-start; max-width: 100%; }
     .row.user { flex-direction: row-reverse; }
@@ -779,6 +781,10 @@
   </div>
 
   <script src="cloudbase.bundle.js"></script>
+  <script src="lib/pdf.min.js"></script>
+  <script src="lib/mammoth.browser.min.js"></script>
+  <script src="lib/xlsx.full.min.js"></script>
+  <script src="lib/jszip.min.js"></script>
   <script>
     // ===== Agent 云端代理（API Key 仅存于服务端，前端只调代理）=====
     const AGENT_BASE = "https://zhhs01-agent-295034-9-1304202737.sh.run.tcloudbase.com";
@@ -815,6 +821,12 @@
       ms = ms || 60000;
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), ms);
+      // 合并外部传入的中断信号（如对话「中断」按钮），任一中止即整体中止
+      const external = init && init.signal;
+      if (external) {
+        if (external.aborted) ctrl.abort();
+        else external.addEventListener("abort", () => ctrl.abort(), { once: true });
+      }
       const _init = Object.assign({}, init, { signal: ctrl.signal });
       return fetch(url, _init).finally(() => clearTimeout(timer));
     }
@@ -950,6 +962,18 @@
     const sendBtn = document.getElementById("homeSend");
     let conversationId = "web-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
     let busy = false;
+    let chatAbort = null; // 当前对话流的中断控制器（Fix4：发送中可点「中断」）
+    function setSendUI() {
+      if (busy) {
+        sendBtn.textContent = "中断";
+        sendBtn.classList.add("stopping");
+        sendBtn.disabled = false; // 可点击以中止生成
+      } else {
+        sendBtn.textContent = "发送";
+        sendBtn.classList.remove("stopping");
+        sendBtn.disabled = false;
+      }
+    }
 
     function scrollBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
     // 状态指示已合并到 topbar 的 Agent 选择器 chip（zhhs_01 即代表已就绪），此处保留 noop 以兼容 sendHome 旧调用
@@ -1017,7 +1041,8 @@
 
     async function sendHome(text) {
       if (busy || !text.trim()) return;
-      busy = true; sendBtn.disabled = true;
+      busy = true; setSendUI();
+      chatAbort = new AbortController();
       addMessage("user", text);
       currentMessages.push({ role: "user", text });
       pushConversationItem(text);
@@ -1034,6 +1059,7 @@
           mode: "cors",
           cache: "no-store",
           headers: Object.assign({ "Content-Type": "application/json", "Accept": "text/event-stream" }, await getAuthHeaders()),
+          signal: chatAbort.signal,
           body: JSON.stringify({ botId: sel.botId || BOT_ID, prompt: text, conversationId, history })
         }, 60000);
         let resp = await doFetch();
@@ -1057,6 +1083,7 @@
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+          if (chatAbort && chatAbort.signal.aborted) break; // 用户点「中断」
           buffer += decoder.decode(value, { stream: true });
           let sep;
           while ((sep = buffer.indexOf("\n\n")) !== -1) {
@@ -1086,6 +1113,16 @@
         persistCurrentMessages();
         setHomeStatus(true, "已连接");
       } catch (err) {
+        // 用户主动中断：不展示错误框，提示已停止生成
+        if (chatAbort && chatAbort.signal.aborted) {
+          const ans = botBubble.querySelector(".answer");
+          if (ans) {
+            const cur = (ans.textContent || "").trim();
+            ans.textContent = cur ? (cur + "\n（已停止生成）") : "（已停止生成）";
+          }
+          setHomeStatus(false, "已停止");
+          return;
+        }
         const box = document.createElement("div");
         box.className = "error-box";
         box.style.margin = "0 0 8px";
@@ -1107,7 +1144,7 @@
         // 控制台也打一份，便于开发者排查
         console.error("[zhhs_01 chat]", err, { agentBase: AGENT_BASE, loc: location.href });
       } finally {
-        busy = false; sendBtn.disabled = false; inputEl.focus();
+        busy = false; chatAbort = null; setSendUI(); inputEl.focus();
       }
     }
 
@@ -1118,7 +1155,15 @@
       sendHome(text);
     }
     function autoResize() { inputEl.style.height = "auto"; inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + "px"; }
-    sendBtn.addEventListener("click", handleSend);
+    // 发送 / 中断 切换：生成中点击按钮即中止当前流（Fix4）
+    function onSendClick() {
+      if (busy) {
+        if (chatAbort) chatAbort.abort();
+      } else {
+        handleSend();
+      }
+    }
+    sendBtn.addEventListener("click", onSendClick);
     inputEl.addEventListener("input", autoResize);
     inputEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -1333,14 +1378,21 @@
       }
       renderConvList();
     }
+    // 欢迎语：取当前接入 Agent 的描述；缺省回退通用文案（Fix2）
+    function agentWelcomeText() {
+      const a = AGENT_LIST.find(x => x.id === AGENT_SELECTED_ID) || AGENT_LIST[0];
+      if (a && a.desc && String(a.desc).trim()) return String(a.desc).trim();
+      const name = (a && (a.name || a.id)) || "ZHHS_Agent";
+      return "我是 " + name + "，部署在腾讯云 CloudBase 的智能对话工作台，基于 aiflowy 接入。描述你的任务，我来拆解与执行；也可以直接去「看板」查看由对话创建的任务。";
+    }
+
     function buildHero() {
       const hero = document.createElement("div");
       hero.className = "hero";
       hero.id = "homeHero";
       hero.innerHTML =
         '<h1>有什么可以帮你的？</h1>' +
-        '<p>我是 ZHHS_Agent，部署在腾讯云 CloudBase 的智能对话工作台，基于 aiflowy 接入。' +
-        '描述你的任务，我来拆解与执行；也可以直接去「看板」查看由对话创建的任务。</p>' +
+        '<p>' + escapeHtml(agentWelcomeText()) + '</p>' +
         '<div class="chips" id="homeChips">' +
           '<span class="chip" data-q="帮我拆解 AI 助手的需求并生成 PRD 大纲">拆解需求生成 PRD</span>' +
           '<span class="chip" data-q="用一句话介绍你自己">介绍你自己</span>' +
@@ -1572,19 +1624,22 @@
         const opt = document.createElement("div");
         opt.className = "opt" + (a.id === AGENT_SELECTED_ID ? " sel" : "");
         opt.dataset.agent = a.id;
-        opt.innerHTML = "<span>" + escapeHtml(a.id) + "</span><span class=\"tick\">✓</span>";
+        opt.innerHTML = "<span>" + escapeHtml(a.name || a.id) + "</span>";
         opt.addEventListener("click", (e) => {
           e.stopPropagation();
+          const changed = a.id !== AGENT_SELECTED_ID;
           AGENT_SELECTED_ID = a.id;
-          agentLabel.textContent = a.id;
+          agentLabel.textContent = (a.name || a.id);
           agentMenu.classList.remove("open");
           renderChatAgentMenu();
+          // 切换接入 Agent 后重置对话，避免上下文串台（Fix1）
+          if (changed) newConversation();
         });
         agentMenu.appendChild(opt);
       });
       if (agentLabel) {
         const cur = AGENT_LIST.find(x => x.id === AGENT_SELECTED_ID) || AGENT_LIST[0];
-        agentLabel.textContent = cur ? cur.id : "zhhs_01";
+        agentLabel.textContent = cur ? (cur.name || cur.id) : "zhhs_01";
       }
     }
 
@@ -1713,6 +1768,11 @@
     loadAgents();
     selectAgent(AGENT_SELECTED_ID);
     renderChatAgentMenu();
+    // 首屏欢迎语同步为当前接入 Agent 的描述（Fix2）
+    (function initHomeHero() {
+      const p = document.querySelector("#homeHero p");
+      if (p) p.textContent = agentWelcomeText();
+    })();
     document.getElementById("testConn").addEventListener("click", async () => {
       const testConnBtn = document.getElementById("testConn");
       const cr = document.getElementById("connResult");
@@ -1792,10 +1852,13 @@
       attachments.forEach((a, i) => {
         const chip = document.createElement("div");
         chip.className = "attach-chip";
+        const tag = a.type === "text" ? (a.note || "文本已读") : a.type === "image" ? "图片" : a.type === "binary" ? "二进制" : "文件";
         chip.innerHTML =
           '<span class="nm">' + escapeHtml(a.name) + '</span>' +
           '<span class="sz">' + fmtSize(a.size) + '</span>' +
+          '<span class="at" style="margin-left:4px;font-size:11px;color:var(--text-3);">' + tag + '</span>' +
           '<span class="x" title="移除">✕</span>';
+        if (a.note) chip.title = a.note;
         chip.querySelector(".x").addEventListener("click", () => { attachments.splice(i, 1); renderAttach(); });
         attachRow.appendChild(chip);
       });
@@ -1812,13 +1875,94 @@
         catch (e) { alert("读取失败：" + e.message); }
       } else { fileInput.value = ""; fileInput.click(); }
     });
+    const MAX_ATTACH_RAW = 1024 * 1024; // 单文件内容上限，避免 prompt 过大（Fix3）
+    const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|jsonl|log|js|ts|tsx|jsx|mjs|cjs|py|java|go|rs|kt|swift|php|rb|lua|c|cpp|h|hpp|xml|yaml|yml|css|scss|less|sql|ini|toml|cfg|conf|env|sh|bash|zsh|bat|ps1|r|dart|vue|svelte|gitignore|editorconfig)$/i;
+    const IMG_EXT = /\.(png|jpe?g|gif|bmp|webp|svg)$/i;
+    if (window.pdfjsLib) { try { pdfjsLib.disableWorker = true; } catch (e) {} }
+    async function extractDocText(file) {
+      const ext = (file.name.split(".").pop() || "").toLowerCase();
+      // 老版 .doc / .ppt（非 OOXML）无法抽取，交由下方回退逻辑处理
+      if (ext === "doc" || ext === "ppt") return null;
+      const buf = await file.arrayBuffer();
+      try {
+        if (ext === "pdf") {
+          if (!window.pdfjsLib) throw new Error("PDF 解析库未加载");
+          const doc = await pdfjsLib.getDocument({ data: buf }).promise;
+          let txt = "";
+          for (let p = 1; p <= doc.numPages; p++) {
+            const page = await doc.getPage(p);
+            const tc = await page.getTextContent();
+            txt += (txt ? "\n" : "") + tc.items.map(it => it.str || "").join(" ");
+          }
+          await doc.destroy();
+          return { content: txt, type: "text", note: "PDF已抽取文本(" + doc.numPages + "页)" };
+        }
+        if (ext === "docx") {
+          if (!window.mammoth) throw new Error("Word 解析库未加载");
+          const res = await mammoth.extractRawText({ arrayBuffer: buf });
+          return { content: res.value || "", type: "text", note: "Word已抽取文本" };
+        }
+        if (ext === "xlsx" || ext === "xls") {
+          if (!window.XLSX) throw new Error("Excel 解析库未加载");
+          const wb = XLSX.read(buf, { type: "array" });
+          const out = wb.SheetNames.map(name =>
+            "【工作表：" + name + "】\n" + XLSX.utils.sheet_to_csv(wb.Sheets[name])
+          ).join("\n\n");
+          return { content: out, type: "text", note: "Excel已抽取文本(" + wb.SheetNames.length + "表)" };
+        }
+        if (ext === "pptx") {
+          if (!window.JSZip) throw new Error("PPT 解析库未加载");
+          const zip = await JSZip.loadAsync(buf);
+          const names = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/i.test(n)).sort();
+          let txt = "";
+          for (const n of names) {
+            const xml = await zip.files[n].async("string");
+            const ms = xml.match(/<a:t>([\s\S]*?)<\/a:t>/g) || [];
+            const slide = ms.map(m => m.replace(/<a:t>/, "").replace(/<\/a:t>/, "")).join(" ");
+            txt += (txt ? "\n" : "") + slide;
+          }
+          return { content: txt, type: "text", note: "PPT已抽取文本(" + names.length + "页)" };
+        }
+        if (ext === "html" || ext === "htm") {
+          const htmlText = await file.text();
+          const doc = new DOMParser().parseFromString(htmlText, "text/html");
+          (doc.querySelectorAll("script,style,noscript") || []).forEach(el => el.remove());
+          const body = doc.body || doc.documentElement;
+          return { content: body ? body.textContent || "" : "", type: "text", note: "HTML已抽取文本" };
+        }
+      } catch (e) { throw e; }
+      return null;
+    }
+    function readAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(r.error || new Error("读取失败"));
+        r.readAsDataURL(file);
+      });
+    }
     fileInput.addEventListener("change", async () => {
       const files = Array.from(fileInput.files || []);
-      const textRe = /\.(txt|md|markdown|csv|json|jsonl|log|js|ts|tsx|jsx|py|java|go|rs|xml|yaml|yml|html|htm|css|sql|ini|toml|sh|bat|ps1)$/i;
       for (const f of files) {
-        let content = "", type = "binary", mime = f.type || "application/octet-stream";
-        if (textRe.test(f.name)) { try { content = await f.text(); type = "text"; } catch (e) {} }
-        attachments.push({ name: f.name, size: f.size, type, content, mime });
+        let content = "", type = "binary", mime = f.type || "application/octet-stream", note = "";
+        try {
+          if (TEXT_EXT.test(f.name)) {
+            content = await f.text(); type = "text";
+          } else if (IMG_EXT.test(f.name) || (mime && mime.indexOf("image/") === 0)) {
+            content = await readAsDataURL(f); type = "image";
+          } else {
+            const ex = await extractDocText(f);
+            if (ex) {
+              content = ex.content; type = ex.type; note = ex.note;
+              if (content.length > 200000) { content = content.slice(0, 200000) + "\n…[文本过长已截断]"; note += "，内容已截断"; }
+            } else if (f.size <= MAX_ATTACH_RAW) {
+              content = await readAsDataURL(f); type = "binary";
+            } else {
+              note = "文件过大（>" + fmtSize(MAX_ATTACH_RAW) + "）仅附名称";
+            }
+          }
+        } catch (e) { note = "读取失败：" + (e && e.message ? e.message : e); }
+        attachments.push({ name: f.name, size: f.size, type, content, mime, note });
       }
       renderAttach();
     });
@@ -1829,11 +1973,17 @@
       if (!text && attachments.length === 0) return;
       let fullPrompt = text;
       if (attachments.length) {
-        const parts = attachments.map(a =>
-          "【本地文件：" + a.name + "】\n" +
-          (a.type === "text" ? a.content : "[二进制/" + a.mime + "，大小 " + fmtSize(a.size) + "，请在桌面版中由 Agent 解析]")
-        );
-        fullPrompt += "\n\n以下是附带的本地文件内容，请结合它们理解任务：\n" + parts.join("\n\n");
+        const blocks = attachments.map(a => {
+          let body = "";
+          if (a.type === "text") body = a.content;
+          else if (a.type === "image") body = "[图片文件，已以 base64 数据附上]\n" + a.content;
+          else if (a.type === "binary") body = "[二进制文件，已以 base64 数据附上（类型 " + a.mime + "）]\n" + a.content;
+          let line = "【本地文件：" + a.name + "（" + (a.note || fmtSize(a.size)) + "）】";
+          if (body) line += "\n" + body;
+          else if (!a.note) line += "\n[文件内容无法在此读取，请在桌面版中由 Agent 解析]";
+          return line;
+        });
+        fullPrompt += "\n\n以下是附带的本地文件内容，请结合它们理解任务：\n" + blocks.join("\n\n");
       }
       inputEl.value = ""; inputEl.style.height = "auto";
       attachments = []; renderAttach();
