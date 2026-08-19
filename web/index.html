@@ -517,6 +517,25 @@
     .timed-table .t-act { text-align: right; }
     .link-btn { background: none; border: none; color: var(--text-2); font-size: 13px; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
     .link-btn:hover { background: #f1f1f2; color: var(--text); }
+    .link-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .link-btn:disabled:hover { background: none; color: var(--text-2); }
+    .timed-table .tr.disabled { opacity: .6; background: #fafafa; }
+    .timed-table .t-act-sep { color: var(--border); margin: 0 2px; }
+    .pill.off { background: #f1f1f2; color: var(--text-3); }
+    /* —— 定时任务：结果抽屉 —— */
+    .result-drawer { position: fixed; top: 0; right: 0; height: 100vh; width: 420px; max-width: 92vw; background: var(--panel); box-shadow: -8px 0 32px rgba(0,0,0,.08); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .2s ease; }
+    .modal-mask:not(.hidden) .result-drawer { transform: translateX(0); }
+    .result-drawer .drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .result-drawer .drawer-title { font-size: 15px; font-weight: 600; }
+    .result-drawer .drawer-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .result-drawer .drawer-foot { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+    .rd-sec { margin-bottom: 18px; }
+    .rd-sec h4 { font-size: 12px; color: var(--text-3); margin: 0 0 8px; font-weight: 600; }
+    .rd-log { display: flex; flex-direction: column; gap: 8px; }
+    .rd-log-item { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; }
+    .rd-log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+    .rd-log-time { color: var(--text-3); font-size: 11px; width: 44px; flex-shrink: 0; }
+    .rd-out { background: #fafafa; border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 13px; color: var(--text-2); max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
 
     /* —— 看板：真实数据驱动 —— */
     .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
@@ -1268,6 +1287,18 @@
         </div>
       </div>
 
+      <!-- 定时任务：执行结果抽屉 -->
+      <div class="modal-mask hidden" id="resultDrawerMask">
+        <div class="result-drawer" role="dialog" aria-modal="true" aria-labelledby="resultDrawerTitle">
+          <div class="drawer-head">
+            <div class="drawer-title" id="resultDrawerTitle">执行结果</div>
+            <button class="modal-close" id="resultDrawerClose" aria-label="关闭">×</button>
+          </div>
+          <div class="drawer-body" id="resultDrawerBody"></div>
+          <div class="drawer-foot" id="resultDrawerFoot"></div>
+        </div>
+      </div>
+
       <!-- 视图：定时任务 -->
       <section class="view" id="view-timed">
         <div class="view-body">
@@ -1341,7 +1372,7 @@
     // 定位是「防随机扫描/爬虫」级保护，非强鉴权；强一致鉴权需函数端校验 CloudBase 登录态。
     // 必须与云端环境变量 APP_TOKEN 保持一致；如需轮换在两端同步修改即可。
     const APP_TOKEN = "zhhs-yx-2608";
-    const BUILD_TAG = "2026-08-19-1748"; // 用于打破浏览器缓存
+    const BUILD_TAG = "2026-08-19-1800"; // 用于打破浏览器缓存
 
     // 缓存根治：【URL 版本化】给访问地址追加 ?v=BUILD_TAG，使每次发布命中独立的 CDN 缓存键，
     // 强制回源拿到最新 HTML，从此无需手动强刷。桌面端 file:// 跳过（无 CDN 缓存）。
@@ -2217,6 +2248,132 @@
       }
       return full;
     }
+    // —— 定时任务真实执行（按 rec.agent 调代理，带 AbortController 可取消）——
+    const _runControllers = {};
+    async function callAgentForTimed(agentId, prompt, signal) {
+      const sel = AGENT_LIST.find(a => a.id === agentId) || AGENT_LIST[0] || { botId: BOT_ID, endpoint: AGENT_BASE };
+      const chatBase = sel.endpoint || AGENT_BASE;
+      const isDirect = !!sel.provider || sel.direct === true;
+      const modelName = (typeof sel.model === "string" && sel.model) ? sel.model
+        : ((sel.model && sel.model.default) || (sel.provider === "zhipu" ? ZHIPU_DEFAULT_MODEL : ""));
+      const chatBody = isDirect
+        ? { provider: sel.provider || "zhipu", baseUrl: sel.baseUrl || "", apiKey: sel.apiKey || "", model: modelName, system: sel.systemPrompt || "", prompt: prompt, conversationId: "", history: [], appToken: APP_TOKEN }
+        : { botId: sel.botId || BOT_ID, prompt: prompt, conversationId: "", history: [] };
+      const resp = await fetchWithTimeout((isDirect ? chatBase : chatBase + "/chat"), {
+        method: "POST", mode: "cors", cache: "no-store",
+        headers: isDirect
+          ? { "Content-Type": "application/json" }
+          : Object.assign({ "Content-Type": "application/json" }, await getAuthHeaders()),
+        body: JSON.stringify(chatBody)
+      }, 60000);
+      if (!resp.ok) throw new Error("timed exec http " + resp.status);
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "", full = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let sep;
+        while ((sep = buffer.indexOf("\n\n")) !== -1) {
+          const block = buffer.slice(0, sep); buffer = buffer.slice(sep + 2);
+          const dataLine = block.split("\n").find(l => l.startsWith("data:"));
+          if (!dataLine) continue;
+          const dataStr = dataLine.slice(5).trim(); if (!dataStr) continue;
+          let payload; try { payload = JSON.parse(dataStr); } catch (e) { continue; }
+          if (payload.type === "ERROR") throw new Error((payload.payload && payload.payload.message) || "timed exec error");
+          if (payload.type === "MESSAGE" && payload.payload && payload.payload.delta) full += payload.payload.delta;
+        }
+      }
+      return full;
+    }
+    async function runTask(id) {
+      const list = getTimed();
+      const i = list.findIndex(t => t.id === id); if (i < 0) return;
+      const rec = list[i];
+      if (rec.enabled === false) { alert("任务已下线，请先上线再运行"); return; }
+      if (rec.status === "running") return;
+      const runId = genId(), startedAt = Date.now();
+      const run = { runId, startedAt, finishedAt: null, status: "running", duration: "", log: [{ ts: startedAt, msg: "开始执行" }], output: null };
+      rec.runs = rec.runs || []; rec.runs.unshift(run);
+      rec.lastRunId = runId; rec.status = "running"; rec.lastRun = startedAt; rec.updatedAt = startedAt;
+      setTimed(list); renderTimed();
+      const ctrl = new AbortController(); _runControllers[id] = ctrl;
+      try {
+        const text = await callAgentForTimed(rec.agent || "zhhs_01", rec.prompt || rec.name, ctrl.signal);
+        const l2 = getTimed(); const j = l2.findIndex(t => t.id === id); if (j < 0) return;
+        const r = l2[j]; const idx = r.runs.findIndex(x => x.runId === runId); if (idx < 0) return;
+        const finishedAt = Date.now();
+        r.runs[idx] = Object.assign({}, r.runs[idx], { finishedAt, status: "success", duration: ((finishedAt - startedAt) / 1000).toFixed(1) + "s", log: (r.runs[idx].log || []).concat([{ ts: finishedAt, msg: "执行完成" }]), output: { type: "conversation", refId: "", text: text } });
+        r.status = "success"; r.duration = r.runs[idx].duration; r.lastRun = startedAt; r.updatedAt = finishedAt;
+        setTimed(l2); renderTimed();
+      } catch (e) {
+        const l2 = getTimed(); const j = l2.findIndex(t => t.id === id); if (j < 0) return;
+        const r = l2[j]; const idx = r.runs.findIndex(x => x.runId === runId); if (idx < 0) return;
+        const finishedAt = Date.now(); const aborted = ctrl.signal.aborted; const st = aborted ? "canceled" : "error";
+        r.runs[idx] = Object.assign({}, r.runs[idx], { finishedAt, status: st, duration: ((finishedAt - startedAt) / 1000).toFixed(1) + "s", log: (r.runs[idx].log || []).concat([{ ts: finishedAt, msg: aborted ? "已取消（上游可能仍在处理）" : ("执行失败：" + ((e && e.message) || e)) }]) });
+        r.status = aborted ? "wait" : "error"; r.updatedAt = finishedAt;
+        setTimed(l2); renderTimed();
+      } finally {
+        if (_runControllers[id] === ctrl) delete _runControllers[id];
+      }
+    }
+    function cancelTask(id) { if (_runControllers[id]) { _runControllers[id].abort(); } }
+    function setTimedEnabled(id, enabled) {
+      const list = getTimed(); const i = list.findIndex(t => t.id === id); if (i < 0) return;
+      list[i] = Object.assign({}, list[i], { enabled: enabled, updatedAt: Date.now() });
+      setTimed(list); renderTimed();
+    }
+    // —— 定时任务结果抽屉（P2：执行历史 + 时间轴日志 + 产出 + 状态链接直达）——
+    function openResultDrawer(rec, runId) {
+      const mask = document.getElementById("resultDrawerMask"); if (!mask) return;
+      const body = document.getElementById("resultDrawerBody");
+      const foot = document.getElementById("resultDrawerFoot");
+      const runs = rec.runs || [];
+      const run = runId ? runs.find(r => r.runId === runId) : runs[0];
+      const em = run ? (EXEC_META[run.status] || EXEC_META.wait) : EXEC_META.wait;
+      let html = '<div class="rd-sec"><h4>任务</h4><div style="font-size:14px;font-weight:600;">' + escapeHtml(rec.name || "") + '</div>' +
+        '<div style="font-size:12px;color:var(--text-3);margin-top:4px;">' + freqLabel(rec) + '</div></div>';
+      if (!run) {
+        html += '<div class="rd-sec" style="color:var(--text-3);font-size:13px;">该任务尚无执行记录。</div>';
+      } else {
+        html += '<div class="rd-sec"><h4>最近执行</h4>' +
+          '<div style="display:flex;align-items:center;gap:8px;font-size:13px;"><span class="pill ' + em.cls + '">' + em.label + '</span>' +
+          '<span style="color:var(--text-3);">' + fmtTime(run.startedAt) + (run.duration ? ' · ' + run.duration : '') + '</span></div></div>';
+        const log = run.log || [];
+        if (log.length) {
+          html += '<div class="rd-sec"><h4>执行日志</h4><div class="rd-log">';
+          log.forEach((l, idx) => {
+            const fail = (l.msg || "").indexOf("失败") >= 0 || (l.msg || "").indexOf("取消") >= 0;
+            const dotColor = fail ? "var(--danger)" : (idx === log.length - 1 && run.status === "success" ? "var(--success)" : "var(--text-3)");
+            html += '<div class="rd-log-item"><span class="rd-log-dot" style="background:' + dotColor + '"></span><span class="rd-log-time">' + (l.ts ? new Date(l.ts).toTimeString().slice(0,5) : '') + '</span><span>' + escapeHtml(l.msg || "") + '</span></div>';
+          });
+          html += '</div></div>';
+        }
+        if (run.output && run.output.text) {
+          html += '<div class="rd-sec"><h4>产出</h4><div class="rd-out">' + escapeHtml(run.output.text.slice(0, 2000)) + (run.output.text.length > 2000 ? '…' : '') + '</div></div>';
+        }
+      }
+      body.innerHTML = html;
+      const published = !!rec.publishedTo;
+      const canPub = !!(run && run.status === "success");
+      foot.innerHTML = '<button class="btn-ghost" id="rdCloseBtn">关闭</button>' +
+        '<button class="btn-dark" id="rdPublishBtn"' + (canPub ? '' : ' disabled') + '>' + (published ? '更新发布' : '发布到看板') + '</button>';
+      mask.classList.remove("hidden");
+      document.getElementById("rdCloseBtn").onclick = closeResultDrawer;
+      const pb = document.getElementById("rdPublishBtn"); if (pb) pb.onclick = function () { publishToKanban(rec.id); };
+    }
+    function closeResultDrawer() { const mask = document.getElementById("resultDrawerMask"); if (mask) mask.classList.add("hidden"); }
+    // 发布到看板：P4 实现，此处占位
+    function publishToKanban(timedId) { alert("发布到看板能力将在 P4 阶段启用"); }
+    (function () {
+      const m = document.getElementById("resultDrawerMask");
+      if (m) {
+        m.addEventListener("click", function (e) { if (e.target === m) closeResultDrawer(); });
+        const c = document.getElementById("resultDrawerClose");
+        if (c) c.addEventListener("click", closeResultDrawer);
+      }
+    })();
     async function enhancePrompt() {
       const ta = inputEl;
       const text = ta.value.trim();
@@ -2280,6 +2437,8 @@
         agentOverrides: getAgentOverrides(),
         kanban: getKanban(),
         timed: getTimed(),
+        bizTypes: getBizTypes(),
+        userTemplates: getUserTemplates(),
       };
       try {
         const { error } = await cbApp.rdb().from('user_state').upsert({
@@ -2314,6 +2473,12 @@
         try { localStorage.setItem(TIMED_KEY, JSON.stringify(st.timed)); } catch (e) {}
         renderTimed();
       }
+      if (Array.isArray(st.bizTypes) && st.bizTypes.length) {
+        try { localStorage.setItem(BIZ_TYPES_KEY, JSON.stringify(st.bizTypes)); } catch (e) {}
+      }
+      if (Array.isArray(st.userTemplates)) {
+        try { localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(st.userTemplates)); } catch (e) {}
+      }
     }
 
     // ============================================================
@@ -2321,20 +2486,51 @@
     // ============================================================
     const KANBAN_KEY = "zhhs01.kanban";
     const TIMED_KEY = "zhhs01.timed";
+    const BIZ_TYPES_KEY = "zhhs01.bizTypes";
+    const USER_TEMPLATES_KEY = "zhhs01.userTemplates";
+    const DEFAULT_BIZ_TYPES = ["存量运营"];
     function genId() { return "id_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
+    // —— 数据 normalize：读取时补默认字段，保证旧数据向后兼容（新增字段缺省即降级）——
+    function normalizeTimed(t) {
+      return Object.assign({
+        enabled: true, sourceType: "manual", templateId: "",
+        runs: [], lastRunId: "", publishedTo: "", publishVersion: 0
+      }, t || {});
+    }
+    function normalizeKanban(t) {
+      return Object.assign({
+        bizType: "存量运营", boardView: null, popularity: 0,
+        sourceRef: "", publishVersion: 0, isTemplate: false
+      }, t || {});
+    }
+
     function getKanban() {
-      try { return JSON.parse(localStorage.getItem(KANBAN_KEY) || "[]"); } catch (e) { return []; }
+      try { return JSON.parse(localStorage.getItem(KANBAN_KEY) || "[]").map(normalizeKanban); } catch (e) { return []; }
     }
     function setKanban(list) {
       try { localStorage.setItem(KANBAN_KEY, JSON.stringify(list)); } catch (e) {}
       if (!PREVIEW) cloudSaveState().catch(() => {});
     }
     function getTimed() {
-      try { return JSON.parse(localStorage.getItem(TIMED_KEY) || "[]"); } catch (e) { return []; }
+      try { return JSON.parse(localStorage.getItem(TIMED_KEY) || "[]").map(normalizeTimed); } catch (e) { return []; }
     }
     function setTimed(list) {
       try { localStorage.setItem(TIMED_KEY, JSON.stringify(list)); } catch (e) {}
+      if (!PREVIEW) cloudSaveState().catch(() => {});
+    }
+    function getBizTypes() {
+      try { const v = JSON.parse(localStorage.getItem(BIZ_TYPES_KEY) || "null"); return (Array.isArray(v) && v.length) ? v : DEFAULT_BIZ_TYPES.slice(); } catch (e) { return DEFAULT_BIZ_TYPES.slice(); }
+    }
+    function setBizTypes(list) {
+      try { localStorage.setItem(BIZ_TYPES_KEY, JSON.stringify(list)); } catch (e) {}
+      if (!PREVIEW) cloudSaveState().catch(() => {});
+    }
+    function getUserTemplates() {
+      try { return JSON.parse(localStorage.getItem(USER_TEMPLATES_KEY) || "[]"); } catch (e) { return []; }
+    }
+    function setUserTemplates(list) {
+      try { localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(list)); } catch (e) {}
       if (!PREVIEW) cloudSaveState().catch(() => {});
     }
 
@@ -2353,6 +2549,8 @@
       running: { label: "运行中", cls: "run" },
       error: { label: "报错", cls: "err" },
       wait: { label: "待运行", cls: "wait" },
+      canceled: { label: "已取消", cls: "off" },
+      offline: { label: "已下线", cls: "off" },
     };
     function fmtTime(ts) {
       if (!ts) return "—";
@@ -2450,18 +2648,29 @@
         return;
       }
       wrap.innerHTML = list.map(t => {
-        const em = EXEC_META[t.status] || EXEC_META.wait;
+        const isOffline = t.enabled === false;
+        const dispStatus = isOffline ? "offline" : t.status;
+        const em = EXEC_META[dispStatus] || EXEC_META.wait;
         const last = t.lastRun ? (fmtTime(t.lastRun) + (t.duration ? " · " + t.duration : "")) : "尚未执行";
         const active = (t.activeFrom || t.activeTo) ? ' <span class="t-sub">生效 ' + (t.activeFrom || "…") + " ~ " + (t.activeTo || "…") + '</span>' : "";
-        return '<div class="tr" data-id="' + t.id + '">' +
+        const hasRuns = !!(t.runs && t.runs.length);
+        const runBtn = t.status === "running"
+          ? '<button class="link-btn" data-act="cancel">取消</button>'
+          : '<button class="link-btn" data-act="run"' + (isOffline ? ' disabled' : '') + '>运行</button>';
+        const lifeBtn = isOffline
+          ? '<button class="link-btn" data-act="online">上线</button>'
+          : '<button class="link-btn" data-act="offline">下线</button>';
+        return '<div class="tr' + (isOffline ? ' disabled' : '') + '" data-id="' + t.id + '">' +
           '<div class="t-name">' + escapeHtml(t.name) + active + '</div>' +
           '<div class="t-cron">' + freqLabel(t) + '</div>' +
           '<div class="t-time">' + last + '</div>' +
-          '<div><span class="pill ' + em.cls + '">' + em.label + '</span></div>' +
+          '<div><span class="pill ' + em.cls + '"' + (hasRuns ? ' data-act="result" style="cursor:pointer;text-decoration:underline"' : '') + '>' + em.label + '</span></div>' +
           '<div class="t-act">' +
-            '<button class="link-btn" data-act="view">查看</button>' +
+            runBtn +
+            '<button class="link-btn" data-act="result"' + (hasRuns ? '' : ' disabled') + '>结果</button>' +
+            '<span class="t-act-sep">·</span>' +
+            lifeBtn +
             '<button class="link-btn" data-act="edit">编辑</button>' +
-            '<button class="link-btn" data-act="run">重试</button>' +
             '<button class="link-btn danger" data-act="del">删除</button>' +
           '</div></div>';
       }).join("");
@@ -2817,26 +3026,20 @@
     });
     document.getElementById("timedList").addEventListener("click", (e) => {
       const row = e.target.closest(".tr"); if (!row || !row.dataset.id) return;
-      const actBtn = e.target.closest("[data-act]"); if (!actBtn) return;
+      const actBtn = e.target.closest("[data-act]"); if (!actBtn || actBtn.disabled) return;
       const id = row.dataset.id;
       const act = actBtn.dataset.act;
       const list = getTimed();
       const rec = list.find(t => t.id === id); if (!rec) return;
       if (act === "view") { openTimedModal(rec, true); }
+      else if (act === "result") { openResultDrawer(rec); }
       else if (act === "edit") { openTimedModal(rec, false); }
       else if (act === "del") {
-        if (confirm("确定删除该定时任务？")) { setTimed(list.filter(t => t.id !== id)); renderTimed(); }
-      } else if (act === "run") {
-        const i = list.findIndex(t => t.id === id);
-        list[i] = Object.assign({}, list[i], { status: "running", lastRun: Date.now() });
-        setTimed(list); renderTimed();
-        setTimeout(() => {
-          const l2 = getTimed();
-          const j = l2.findIndex(t => t.id === id);
-          if (j >= 0) l2[j] = Object.assign({}, l2[j], { status: "success", duration: (0.8 + Math.random() * 2).toFixed(1) + "s" });
-          setTimed(l2); renderTimed();
-        }, 1200);
-      }
+        if (confirm("确定删除该定时任务？")) { cancelTask(id); setTimed(getTimed().filter(t => t.id !== id)); renderTimed(); }
+      } else if (act === "run") { runTask(id); }
+      else if (act === "cancel") { cancelTask(id); }
+      else if (act === "offline") { cancelTask(id); setTimedEnabled(id, false); }
+      else if (act === "online") { setTimedEnabled(id, true); }
     });
     function setModalStatus(id, msg, kind) {
       const el = document.getElementById(id); if (!el) return;
