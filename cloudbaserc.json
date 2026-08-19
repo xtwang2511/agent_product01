@@ -1,0 +1,18 @@
+{
+  "envId": "zhhs-agent-2608-d1fs32gddb84cdea",
+  "functionRoot": "backend/functions",
+  "functions": [
+    {
+      "name": "zhipu-proxy",
+      "runtime": "Nodejs18.15",
+      "timeout": 120,
+      "memorySize": 512,
+      "isHTTP": true,
+      "envVariables": {
+        "ZHIPU_ENDPOINT": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        "APP_TOKEN": "zhhs-yx-2608"
+      },
+      "ignore": [".git/**", "*.md"]
+    }
+  ]
+}

@@ -26,6 +26,8 @@
 
 const http = require('http');
 const https = require('https');
+const net = require('net');
+const dns = require('dns');
 const { URL } = require('url');
 
 const PORT = parseInt(process.env.PORT || '9000', 10);
@@ -39,9 +41,35 @@ const API_KEY = process.env.AIFLOWY_API_KEY || '';
 const DEFAULT_BOT_ID =
   process.env.AIFLOWY_BOT_ID || '438168191460208640';
 
+// 直连市场大模型（智谱 GLM 等 OpenAI 兼容接口）的接入地址；
+// 密钥 ZHIPU_API_KEY 仅存在于服务端环境变量，不进前端代码与 git 仓库。
+const ZHIPU_ENDPOINT =
+  process.env.ZHIPU_ENDPOINT || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+
 // 并发保护：单进程同时进行的 SSE 聊天流上限，超出返回 429，保护上游与 fd。
 const MAX_CONCURRENT_CHATS = Number(process.env.MAX_CONCURRENT_CHATS || 200);
 let activeChats = 0;
+
+// ===== CORS 白名单（生产收紧）=====
+// 允许来源：Web 静态托管域名（含 *.app.tcloudbase.com 网关域）+ Origin:"null"（Electron file:// 桌面端）。
+// 生产可另配环境变量 ALLOWED_ORIGINS 覆盖（逗号分隔）；未配置时用内置默认值。
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || [
+  'https://zhhs-agent-2608-d1fs32gddb84cdea-1304202737.ap-shanghai.app.tcloudbase.com',
+  'https://zhhs-agent-2608-d1fs32gddb84cdea-1304202737.tcloudbaseapp.com',
+].join(',')).split(',').map((s) => s.trim()).filter(Boolean);
+
+// 根据请求 Origin 返回应下发的 Access-Control-Allow-Origin 值：
+//   - 无 Origin（同源 / curl / 部分 file:// 场景）→ null（不设 CORS 头，不影响访问）
+//   - Origin === "null"（Electron file:// 桌面端）→ "*"（无凭证场景，安全）
+//   - Origin 在白名单 → 回显该 Origin
+//   - 未知 Origin → null（浏览器因缺 ACAO 头而拦截响应，实现收口）
+function corsOrigin(req) {
+  const origin = req.headers.origin;
+  if (!origin) return null;
+  if (origin === 'null') return '*';
+  if (ALLOWED_ORIGINS.includes(origin)) return origin;
+  return null;
+}
 
 // 上游（aiflowy）连接复用：默认每次 /chat 都新建 TLS 连接，重复对话每次多付一次 TCP+TLS 握手（~100-300ms）。
 // 用 keepAlive Agent 复用连接，显著降低（尤其是连续对话的）首字延迟。
@@ -117,7 +145,6 @@ function sendJson(res, status, obj, extraHeaders) {
   const headers = Object.assign(
     {
       'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
     },
     extraHeaders || {}
   );
@@ -191,6 +218,11 @@ function handleChat(req, res) {
     } catch (e) {
       finish();
       return fail(res, 400, { error: 'invalid json body' });
+    }
+
+    // 直连市场大模型（如智谱 GLM）：不走 aiflowy，由本代理服务端调用，密钥走环境变量 ZHIPU_API_KEY
+    if (parsed.provider === 'zhipu' || parsed.direct === true) {
+      return handleChatZhipu(req, res, parsed);
     }
 
     const botId = parsed.botId || DEFAULT_BOT_ID;
@@ -274,7 +306,6 @@ function handleChat(req, res) {
           'Content-Type': 'text/event-stream; charset=utf-8',
           'Cache-Control': 'no-cache, no-transform',
           Connection: 'keep-alive',
-          'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           'X-Accel-Buffering': 'no',
         });
@@ -324,9 +355,189 @@ function handleChat(req, res) {
   });
 }
 
+/**
+ * 直连市场大模型（智谱 GLM 等 OpenAI 兼容接口），不走 aiflowy。
+ * 本函数在 CloudBase 服务端发起请求，API Key 仅存于服务端环境变量 ZHIPU_API_KEY，
+ * 不进入前端代码与 git 仓库，避免密钥随静态站点泄露。
+ * 入参（前端透传）：provider / model / system / prompt / conversationId / history
+ * 出参（SSE，沿用前端约定格式）：data:{"type":"MESSAGE","payload":{"delta":...}} 与 ERROR 事件。
+ */
+async function handleChatZhipu(req, res, parsed) {
+  let aborted = false;
+  req.on('error', () => { aborted = true; });
+  req.on('aborted', () => { aborted = true; });
+  res.on('close', () => { if (!res.writableFinished) aborted = true; clearHeartbeat(); });
+
+  const API_KEY = process.env.ZHIPU_API_KEY || '';
+  if (!API_KEY) {
+    return sendJson(res, 500, { error: 'ZHIPU_API_KEY not configured (set it in CloudBase env)' });
+  }
+  if (activeChats >= MAX_CONCURRENT_CHATS) {
+    return sendJson(res, 429, { error: 'too many concurrent requests', active: activeChats, max: MAX_CONCURRENT_CHATS });
+  }
+
+  const prompt = parsed.prompt || parsed.message || '';
+  const model = parsed.model || 'glm-5.2';
+  const system = parsed.system || '';
+  if (!prompt) {
+    return sendJson(res, 400, { error: 'prompt/message is required' });
+  }
+  // 出网探测：CloudRun 容器默认可能无公网出网，open.bigmodel.cn 不可达会导致上游连接挂起、网关 0.5s 硬掐（ERR_ABORT_HANDLER）。
+  // 先快速探测 443 连通性，不可达时给出明确错误而非让网关 abort。
+  const zhipuHost = (() => { try { return new URL(ZHIPU_ENDPOINT).hostname; } catch (e) { return 'open.bigmodel.cn'; } })();
+  const reach = await new Promise((resolve) => {
+    const s = net.connect(443, zhipuHost);
+    const to = setTimeout(() => { try { s.destroy(); } catch (_) {} resolve('timeout'); }, 3500);
+    s.on('connect', () => { clearTimeout(to); try { s.destroy(); } catch (_) {} resolve('ok'); });
+    s.on('error', (e) => { clearTimeout(to); resolve('err:' + (e && e.code ? e.code : e.message)); });
+  });
+  if (reach !== 'ok') {
+    return sendJson(res, 502, { error: 'cannot reach zhipu host ' + zhipuHost + ': ' + reach });
+  }
+
+  const history = Array.isArray(parsed.history) ? parsed.history : [];
+  const messages = [];
+  if (system) messages.push({ role: 'system', content: system });
+  for (const h of history) {
+    if (h && h.role && typeof h.content === 'string') {
+      messages.push({ role: h.role === 'assistant' ? 'assistant' : 'user', content: h.content });
+    }
+  }
+  messages.push({ role: 'user', content: prompt });
+
+  activeChats++;
+  let finished = false;
+  const finish = () => { if (!finished) { finished = true; activeChats = Math.max(0, activeChats - 1); } };
+
+  const payload = JSON.stringify({ model, messages, stream: true });
+  const u = new URL(ZHIPU_ENDPOINT);
+  const options = {
+    method: 'POST',
+    hostname: u.hostname,
+    port: u.port || 443,
+    path: u.pathname + u.search,
+    agent: upstreamAgent,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + API_KEY,
+      Accept: 'text/event-stream',
+      Connection: 'keep-alive',
+    },
+  };
+
+  try {
+    if (!res.headersSent) {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'X-Accel-Buffering': 'no',
+      });
+    }
+    res.write(': connected\n\n');
+  } catch (e) { finish(); return; }
+
+  let pipedAny = false;
+  let buf = '';
+  let upstream = null;
+  let heartbeat = null;
+
+  const clearHeartbeat = () => { if (heartbeat) { clearInterval(heartbeat); heartbeat = null; } };
+  // SSE 心跳：智谱 GLM 为推理模型，首 token 可能数秒才到；CloudBase 网关对 SSE 有空闲/首字节超时，
+  // 周期性发注释包（: ping）保活，避免网关在等到上游首字前掐断连接（表现为 ERR_ABORT_HANDLER）。
+  heartbeat = setInterval(() => {
+    if (res.writableEnded) { clearHeartbeat(); return; }
+    try { res.write(': ping\n\n'); } catch (_) { clearHeartbeat(); }
+  }, 500);
+
+  const emitError = (message) => {
+    clearHeartbeat();
+    if (res.writableEnded) return;
+    try { res.write('data:' + JSON.stringify({ type: 'ERROR', payload: { message } }) + '\n\n'); } catch (_) {}
+    try { res.end(); } catch (_) {}
+  };
+
+  try {
+    upstream = https.request(options, (upRes) => {
+      upRes.on('data', () => { pipedAny = true; clearHeartbeat(); });
+      if (upRes.statusCode && upRes.statusCode >= 400) {
+        let chunks = '';
+        upRes.on('data', (c) => { chunks += c; });
+        upRes.on('end', () => {
+          let msg = '上游返回 ' + upRes.statusCode;
+          try { const j = JSON.parse(chunks); if (j && j.error && j.error.message) msg = j.error.message; } catch (e) {}
+          finish(); emitError(msg);
+        });
+        upRes.resume();
+        return;
+      }
+      upRes.on('error', (err) => {
+        console.error('[zhhs_01][zhipu] upstream stream error:', err && err.message);
+        finish();
+        if (!pipedAny) emitError('上游连接中断：' + (err && err.message ? err.message : 'unknown'));
+        else if (!res.writableEnded) { try { res.end(); } catch (_) {} }
+      });
+      upRes.on('data', (chunk) => {
+        if (aborted) return;
+        buf += chunk.toString('utf8');
+        let idx;
+        while ((idx = buf.indexOf('\n')) !== -1) {
+          const line = buf.slice(0, idx); buf = buf.slice(idx + 1);
+          const t = line.trim();
+          if (!t || !t.startsWith('data:')) continue;
+          const dataStr = t.slice(5).trim();
+          if (dataStr === '[DONE]') { finish(); if (!res.writableEnded) { try { res.end(); } catch (_) {} } return; }
+          let j; try { j = JSON.parse(dataStr); } catch (e) { continue; }
+          const delta = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
+          if (delta) {
+            try { res.write('data:' + JSON.stringify({ type: 'MESSAGE', payload: { delta } }) + '\n\n'); } catch (_) {}
+          }
+        }
+      });
+      upRes.on('end', () => {
+        finish();
+        if (!res.writableEnded) {
+          if (!pipedAny) emitError('上游无响应，请稍后重试');
+          else { try { res.end(); } catch (_) {} }
+        }
+      });
+    });
+  } catch (e) {
+    finish();
+    return fail(res, 502, { error: 'upstream request failed: ' + e.message });
+  }
+
+  upstream.setTimeout(UPSTREAM_TIMEOUT_MS, () => {
+    console.error('[zhhs_01][zhipu] upstream timeout after', UPSTREAM_TIMEOUT_MS, 'ms');
+    finish();
+    if (!res.writableEnded) {
+      if (!pipedAny) emitError('上游响应超时，请稍后重试');
+      else { try { res.end(); } catch (_) {} }
+    }
+    try { upstream.destroy(); } catch (_) {}
+  });
+  upstream.on('error', (err) => {
+    console.error('[zhhs_01][zhipu] upstream error:', err && err.message);
+    finish();
+    if (!pipedAny) emitError('上游连接错误：' + (err && err.message ? err.message : 'unknown'));
+    else if (!res.writableEnded) { try { res.end(); } catch (_) {} }
+  });
+
+  try {
+    upstream.write(payload);
+    upstream.end();
+  } catch (e) {
+    console.error('[zhhs_01][zhipu] upstream write failed:', e && e.message);
+    finish();
+    if (!res.writableEnded) emitError('上游写入失败，请稍后重试');
+  }
+}
+
 const server = http.createServer(async (req, res) => {
-  // 允许跨域（CloudBase API 网关通常已处理，这里作为兜底）
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS：按白名单收敛（Web 托管域名 + 桌面端 file:// null 来源），未知来源不设 ACAO，由浏览器拦截响应
+  const acao = corsOrigin(req);
+  if (acao) res.setHeader('Access-Control-Allow-Origin', acao);
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 

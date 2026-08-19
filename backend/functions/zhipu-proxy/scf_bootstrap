@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+/var/lang/node18/bin/node index.js

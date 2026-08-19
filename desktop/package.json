@@ -21,7 +21,8 @@
       "output": "dist"
     },
     "win": {
-      "target": ["nsis"]
+      "target": "nsis",
+      "signtoolOptions": null
     },
     "nsis": {
       "oneClick": false,
