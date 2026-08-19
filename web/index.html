@@ -536,6 +536,98 @@
     .rd-log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
     .rd-log-time { color: var(--text-3); font-size: 11px; width: 44px; flex-shrink: 0; }
     .rd-out { background: #fafafa; border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 13px; color: var(--text-2); max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+    /* —— 定时任务：模板选择面板 —— */
+    .tpl-tabs { display: inline-flex; gap: 4px; background: #fafafa; border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 16px; }
+    .tpl-tab { background: none; border: none; font-size: 13px; color: var(--text-2); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+    .tpl-tab.active { background: var(--panel); color: var(--text); font-weight: 600; box-shadow: var(--shadow-sm); }
+    .tpl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .tpl-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; background: var(--panel); transition: border-color .15s; }
+    .tpl-card:hover { border-color: var(--text); }
+    .tpl-card .tc-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .tpl-card .tc-desc { font-size: 12px; color: var(--text-3); line-height: 1.5; }
+    .tpl-card .tc-meta { font-size: 11px; color: var(--text-3); margin-top: 8px; }
+    .tpl-empty { grid-column: 1/-1; text-align: center; color: var(--text-3); font-size: 13px; padding: 32px 0; }
+    /* —— 场景看板：业务类型维度条 —— */
+    .kb-tab-add { background: none; border: 1px dashed var(--border); border-radius: 8px; padding: 6px 12px; font-size: 13px; color: var(--text-3); cursor: pointer; margin-left: 2px; }
+    .kb-tab-add:hover { color: var(--text); border-color: var(--text); }
+    /* —— 场景看板：两行三列可视化宫格（P6）—— */
+    .kv-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 16px; }
+    .kv-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; min-height: 180px; transition: box-shadow .18s, border-color .18s, transform .18s; }
+    .kv-card:hover { border-color: var(--text); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+    .kv-viz { height: 96px; background: #fafafa; display: flex; align-items: flex-end; gap: 6px; padding: 12px 14px; overflow: hidden; }
+    .kv-bars { display: flex; align-items: flex-end; gap: 6px; width: 100%; height: 100%; }
+    .kv-bars span { flex: 1; display: block; border-radius: 3px 3px 0 0; opacity: .85; }
+    .kv-text { font-size: 12px; color: var(--text-2); line-height: 1.5; align-self: flex-start; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .kv-body { padding: 12px 14px; }
+    .kv-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .kv-meta { display: flex; align-items: center; gap: 8px; }
+    .kv-biz { font-size: 11px; color: var(--text-3); }
+    .kv-more { align-items: center; justify-content: center; background: #fafafa; border: 1px dashed var(--border); }
+    .kv-more-plus { font-size: 32px; color: var(--text-3); font-weight: 300; line-height: 1; }
+    .kv-more-label { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+    .kv-back { margin-bottom: 12px; }
+    /* —— 场景看板：预览层（P7）—— */
+    .scene-preview { position: fixed; top: 0; right: 0; height: 100vh; width: 640px; max-width: 94vw; background: var(--panel); box-shadow: -8px 0 32px rgba(0,0,0,.08); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .2s ease; }
+    .modal-mask:not(.hidden) .scene-preview { transform: translateX(0); }
+    .scene-preview .drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .scene-preview .sp-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .sp-head { margin-bottom: 18px; }
+    .sp-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .sp-meta { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-3); flex-wrap: wrap; }
+    .sp-viz { background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; font-size: 13px; line-height: 1.7; color: var(--text-2); max-height: 60vh; overflow-y: auto; }
+    .sp-viz pre { white-space: pre-wrap; word-break: break-word; }
+    .sp-empty { color: var(--text-3); text-align: center; padding: 32px 0; }
+    .sp-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+    /* —— 列表视图看板内容摘要 —— */
+    .t-board-preview { background: #fafafa; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: var(--text-2); line-height: 1.6; margin-top: 8px; max-height: 96px; overflow: hidden; white-space: pre-wrap; word-break: break-word; }
+    /* —— 可视化图表配色 token（v1.1 Phase1：主题化、可扩展）—— */
+    :root {
+      --viz-primary: #378ADD; --viz-primary-d: #185FA5; --viz-positive: #1D9E75;
+      --viz-grid: #ECECEC; --viz-axis: #D7D9DD;
+      --viz-c1: #378ADD; --viz-c2: #1D9E75; --viz-c3: #BA7517; --viz-c4: #D4537E;
+      --viz-c5: #534AB7; --viz-c6: #639922; --viz-c7: #E24B4A; --viz-c8: #888780;
+    }
+    /* SVG 图表元素（fill 不能用 var() 直接写在属性，改用 CSS 类） */
+    .viz-bar { fill: var(--viz-primary); }
+    .viz-bar-val { fill: var(--viz-primary-d); }
+    .viz-axis-label { fill: var(--text-2); }
+    .viz-axis { stroke: var(--viz-axis); }
+    .viz-line { stroke: var(--viz-positive); }
+    .viz-dot { fill: var(--viz-positive); }
+    .viz-s1 { fill: var(--viz-c1); background: var(--viz-c1); }
+    .viz-s2 { fill: var(--viz-c2); background: var(--viz-c2); }
+    .viz-s3 { fill: var(--viz-c3); background: var(--viz-c3); }
+    .viz-s4 { fill: var(--viz-c4); background: var(--viz-c4); }
+    .viz-s5 { fill: var(--viz-c5); background: var(--viz-c5); }
+    .viz-s6 { fill: var(--viz-c6); background: var(--viz-c6); }
+    .viz-s7 { fill: var(--viz-c7); background: var(--viz-c7); }
+    .viz-s8 { fill: var(--viz-c8); background: var(--viz-c8); }
+    /* —— 可视化图表（boardView 内 chart 代码块 → SVG）—— */
+    .chart-box { background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 12px 0; animation: vizFadeIn .35s ease-out; }
+    .echarts-box { width: 100%; height: 280px; }
+    .kv-publish-btn { margin-top: 8px; padding: 4px 12px; font-size: 12px; background: #18191C; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    .kv-publish-btn:hover { background: #3a3d44; }
+    .sync-badge { font-size: 12px; font-weight: 400; color: var(--viz-positive); margin-left: 8px; vertical-align: middle; }
+    .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    .chart-err { font-size: 12px; color: var(--danger); padding: 8px 0; }
+    .pie-wrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .pie-legend { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-2); }
+    .pie-item { display: flex; align-items: center; gap: 6px; }
+    .pie-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+    /* 入场 / 条形升起动画（仅预览层 chart-box，避免宫格轮询闪烁） */
+    .chart-box .viz-bar { transform-box: fill-box; transform-origin: bottom; animation: vizBarRise .5s ease-out; }
+    @keyframes vizBarRise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    @keyframes vizFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    /* 响应式：宫格 3 → 2 → 1 列；预览层移动端全屏 */
+    @media (max-width: 980px) {
+      .kv-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; grid-auto-rows: minmax(170px, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .kv-grid { grid-template-columns: 1fr; }
+      .scene-preview { width: 100vw; max-width: 100vw; }
+    }
+    .kv-mini-chart { width: 100%; max-height: 96px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .kv-mini-chart svg { max-height: 88px; }
 
     /* —— 看板：真实数据驱动 —— */
     .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
@@ -827,7 +919,7 @@
         <div class="view-body">
           <div class="page-head">
             <div>
-              <h2>场景看板</h2>
+              <h2>场景看板 <span class="sync-badge" id="kanbanSyncBadge" style="display:none">● 实时同步</span></h2>
               <p>通过对话创建与管理的场景都在这里汇总，按状态实时归拢。</p>
             </div>
             <button class="btn-dark" id="newTaskBtn">+ 新建场景</button>
@@ -842,10 +934,7 @@
 
           <div class="kb-toolbar">
             <div class="kb-tabs" id="kbTabs">
-              <button class="kb-tab active" data-f="all">全部<span class="kb-tab-cnt" id="kbCntAll">0</span></button>
-              <button class="kb-tab" data-f="wait">待运行<span class="kb-tab-cnt" id="kbCntWait">0</span></button>
-              <button class="kb-tab" data-f="doing">进行中<span class="kb-tab-cnt" id="kbCntDoing">0</span></button>
-              <button class="kb-tab" data-f="done">已完成<span class="kb-tab-cnt" id="kbCntDone">0</span></button>
+              <!-- 业务类型维度 tab 由 renderBizTabs() 动态生成：全部 / 存量运营 / ... / + -->
             </div>
             <div class="kb-search-wrap">
               <svg class="kb-search-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -1057,7 +1146,7 @@
             </div>
             <div class="form-row">
               <div class="m-field">
-                <label>分类</label>
+                <label>业务分类</label>
                 <select id="taskCategory">
                   <option value="">未分类</option>
                   <option value="产品规划">产品规划</option>
@@ -1072,23 +1161,23 @@
                 <input id="taskTags" type="text" placeholder="逗号分隔，如：AI, 增长" autocomplete="off" />
               </div>
             </div>
-            <div class="m-field">
+            <div class="m-field task-edit-only">
               <label>目标</label>
               <input id="taskGoal" type="text" placeholder="这个场景要达成的关键结果" autocomplete="off" />
             </div>
-            <div class="m-field">
+            <div class="m-field task-edit-only">
               <label>协作成员</label>
               <input id="taskMembers" type="text" placeholder="逗号分隔，如：产品, 前端" autocomplete="off" />
             </div>
-            <div class="m-field">
+            <div class="m-field task-edit-only">
               <label>相关链接</label>
               <input id="taskLinks" type="text" placeholder="逗号分隔的 URL，如：https://…" autocomplete="off" />
             </div>
-            <div class="m-field">
+            <div class="m-field task-edit-only">
               <label>说明</label>
               <textarea id="taskNotes" rows="3" placeholder="补充背景、约束、注意事项等"></textarea>
             </div>
-            <div class="form-row">
+            <div class="form-row task-edit-only">
               <div class="m-field">
                 <label>状态</label>
                 <select id="taskStatus">
@@ -1106,7 +1195,7 @@
                 </select>
               </div>
             </div>
-            <div class="form-row">
+            <div class="form-row task-edit-only">
               <div class="m-field">
                 <label>负责人</label>
                 <select id="taskAssignee">
@@ -1124,7 +1213,7 @@
                 <input id="taskSub" type="number" min="0" value="0" />
               </div>
             </div>
-            <div class="m-field">
+            <div class="m-field task-edit-only">
               <label class="k-switch"><input type="checkbox" id="taskEnabled" checked /><span class="track"></span><span class="lbl">启用该场景</span></label>
             </div>
             <div class="m-status" id="taskModalStatus"></div>
@@ -1132,7 +1221,19 @@
           <div class="modal-foot">
             <button class="btn-ghost" id="taskModalCancel">取消</button>
             <button class="btn-dark" id="taskModalSubmit">创建场景</button>
+            <button class="btn-dark" id="taskModalStart">开始创建</button>
           </div>
+        </div>
+      </div>
+
+      <!-- 场景看板：预览层（P7） -->
+      <div class="modal-mask hidden" id="scenePreviewMask">
+        <div class="scene-preview" role="dialog" aria-modal="true" aria-labelledby="scenePreviewTitle">
+          <div class="drawer-head">
+            <div class="drawer-title" id="scenePreviewTitle">场景预览</div>
+            <button class="modal-close" id="scenePreviewClose" aria-label="关闭">×</button>
+          </div>
+          <div class="sp-body" id="scenePreviewBody"></div>
         </div>
       </div>
 
@@ -1281,6 +1382,7 @@
             <div class="m-status" id="timedModalStatus"></div>
           </div>
           <div class="modal-foot">
+            <button class="btn-ghost" id="saveAsTemplateBtn">保存为模板</button>
             <button class="btn-ghost" id="timedModalCancel">取消</button>
             <button class="btn-dark" id="timedModalSubmit">创建任务</button>
           </div>
@@ -1299,6 +1401,24 @@
         </div>
       </div>
 
+      <!-- 定时任务：模板选择面板（系统 / 我的 / 看板库） -->
+      <div class="modal-mask hidden" id="tplMask">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tplTitle">
+          <div class="modal-head">
+            <div class="modal-title" id="tplTitle">从模板新建</div>
+            <button class="modal-close" id="tplClose" aria-label="关闭">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="tpl-tabs" id="tplTabs">
+              <button class="tpl-tab active" data-src="system">系统模板</button>
+              <button class="tpl-tab" data-src="user">我的模板</button>
+              <button class="tpl-tab" data-src="kanban">看板库</button>
+            </div>
+            <div class="tpl-grid" id="tplGrid"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- 视图：定时任务 -->
       <section class="view" id="view-timed">
         <div class="view-body">
@@ -1307,7 +1427,10 @@
               <h2>定时任务</h2>
               <p>管理固定时间执行的任务，查看执行状态：成功 / 运行中 / 报错 / 待运行。</p>
             </div>
-            <button class="btn-dark" id="newTimedBtn">+ 新建定时任务</button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-ghost" id="tplPickerBtn">从模板新建</button>
+              <button class="btn-dark" id="newTimedBtn">+ 新建定时任务</button>
+            </div>
           </div>
 
           <div class="timed-summary">
@@ -1361,6 +1484,7 @@
     <script src="lib/mermaid.min.js"></script>
     <script src="lib/katex.min.js"></script>
     <script src="lib/auto-render.min.js"></script>
+    <script src="lib/echarts.min.js"></script>
     <script>
     // ===== Agent 云端代理（API Key 仅存于服务端，前端只调代理）=====
     const AGENT_BASE = "https://zhhs01-agent-295034-9-1304202737.sh.run.tcloudbase.com";
@@ -1372,7 +1496,7 @@
     // 定位是「防随机扫描/爬虫」级保护，非强鉴权；强一致鉴权需函数端校验 CloudBase 登录态。
     // 必须与云端环境变量 APP_TOKEN 保持一致；如需轮换在两端同步修改即可。
     const APP_TOKEN = "zhhs-yx-2608";
-    const BUILD_TAG = "2026-08-19-1800"; // 用于打破浏览器缓存
+    const BUILD_TAG = "2026-08-19-1810"; // 用于打破浏览器缓存
 
     // 缓存根治：【URL 版本化】给访问地址追加 ?v=BUILD_TAG，使每次发布命中独立的 CDN 缓存键，
     // 强制回源拿到最新 HTML，从此无需手动强刷。桌面端 file:// 跳过（无 CDN 缓存）。
@@ -1563,7 +1687,7 @@
       // 侧栏高亮
       document.getElementById("navHome").classList.toggle("active", name === "home");
       document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.view === name));
-      if (name === "kanban") renderKanban();
+      if (name === "kanban") { renderKanban(); startKanbanPoll(); } else { stopKanbanPoll(); }
       if (name === "timed") renderTimed();
       window.scrollTo(0, 0);
     }
@@ -2143,6 +2267,11 @@
         }
         currentMessages.push({ role: "bot", text: fullText });
         persistCurrentMessages();
+        // 回写 boardView：若当前对话绑定了场景（P7「开始创建」），把 agent 回复写回该场景看板（一次性）
+        if (typeof _boundSceneId !== "undefined" && _boundSceneId && fullText.trim()) {
+          const ans = (fin.answer && fin.answer.trim()) ? fin.answer : fullText;
+          writeBackBoardView(_boundSceneId, ans);
+        }
       } catch (err) {
         // 用户主动中断：不展示错误框，提示已停止生成（状态卡里给重试入口）
         if (chatAbort && chatAbort.signal.aborted) {
@@ -2365,7 +2494,166 @@
     }
     function closeResultDrawer() { const mask = document.getElementById("resultDrawerMask"); if (mask) mask.classList.add("hidden"); }
     // 发布到看板：P4 实现，此处占位
-    function publishToKanban(timedId) { alert("发布到看板能力将在 P4 阶段启用"); }
+    // —— P3 模板体系：系统预置 / 用户自配置 / 看板库 ——
+    const TIMED_TEMPLATES = [
+      { id: "tpl_daily_inspect", name: "每日数据巡检", desc: "每日定时巡检关键指标并汇总预警", prompt: "巡检今日核心数据指标，列出异常项与环比变化，输出汇总简报。", freqMode: "cycle", cycleType: "daily", cycleTime: "09:00", agent: "zhhs_01" },
+      { id: "tpl_weekly_report", name: "周报自动生成", desc: "每周一汇总本周工作生成结构化周报", prompt: "汇总本周已完成事项、关键数据与下周计划，生成结构化周报。", freqMode: "cycle", cycleType: "weekly", cycleWeekDay: "1", cycleTime: "10:00", agent: "zhhs_01" },
+      { id: "tpl_ops_broadcast", name: "运营指标播报", desc: "定时播报运营核心指标与趋势判断", prompt: "播报当前运营核心指标（DAU、转化、留存），给出趋势判断。", freqMode: "interval", intVal: 30, intUnit: "min", agent: "zhhs_01" },
+    ];
+    let _pendingTemplate = null;
+    const tplMask = document.getElementById("tplMask");
+    function tplFreqLabel(t) {
+      if (t.freqMode === "interval") return "每 " + (t.intVal||30) + " " + ({min:"分钟",hour:"小时",day:"天"}[t.intUnit]||"分钟");
+      if (t.freqMode === "once") return "单次 · " + (t.onceAt||"");
+      const c = t.cycleType || "daily";
+      return (c==="weekly"?"每周":c==="monthly"?"每月":c==="yearly"?"每年":"每天") + " " + (t.cycleTime||"09:00");
+    }
+    function tplToCard(tpl, srcLabel, src, idx) {
+      return '<div class="tpl-card" data-src="' + src + '" data-idx="' + idx + '">' +
+        '<div class="tc-name">' + escapeHtml(tpl.name||"") + '</div>' +
+        '<div class="tc-desc">' + escapeHtml(tpl.desc||"") + '</div>' +
+        '<div class="tc-meta">' + srcLabel + ' · ' + tplFreqLabel(tpl) + '</div></div>';
+    }
+    function kanbanAsTemplates() {
+      return getKanban().map(s => ({ id: "kb_" + s.id, name: s.title, desc: s.desc || "来自场景看板库", prompt: s.notes || s.desc || s.title, freqMode: "cycle", cycleType: "daily", cycleTime: "09:00", agent: "zhhs_01" }));
+    }
+    function openTplPicker(src) {
+      src = src || "system";
+      if (!tplMask) return;
+      document.querySelectorAll("#tplTabs .tpl-tab").forEach(b => b.classList.toggle("active", b.dataset.src === src));
+      const grid = document.getElementById("tplGrid");
+      let arr, label;
+      if (src === "user") { arr = getUserTemplates(); label = "我的"; }
+      else if (src === "kanban") { arr = kanbanAsTemplates(); label = "看板库"; }
+      else { arr = TIMED_TEMPLATES; label = "系统"; }
+      grid.innerHTML = arr.length ? arr.map((t, i) => tplToCard(t, label, src, i)).join("") : '<div class="tpl-empty">' + (src==="user" ? "还没有自配置模板，在新建/编辑任务时点「保存为模板」即可沉淀。" : src==="kanban" ? "场景看板库暂无场景，先去「场景看板」创建。" : "暂无系统模板。") + '</div>';
+      tplMask.classList.remove("hidden");
+    }
+    function closeTplPicker() { if (tplMask) tplMask.classList.add("hidden"); }
+    function applyTemplate(tpl) {
+      closeTplPicker();
+      openTimedModal(null, false);
+      document.getElementById("timedName").value = tpl.name || "";
+      document.getElementById("timedPrompt").value = tpl.prompt || "";
+      populateTimedAgentSelect();
+      document.getElementById("timedAgent").value = tpl.agent || "zhhs_01";
+      const mode = tpl.freqMode || "cycle";
+      setTimedFreqMode(mode);
+      if (mode === "cycle") {
+        const ct = tpl.cycleType || "daily";
+        setTimedCycleType(ct);
+        if (ct === "daily") document.getElementById("timedDailyTime").value = tpl.cycleTime || "09:00";
+        else if (ct === "weekly") { document.getElementById("timedWeeklyDay").value = tpl.cycleWeekDay || "1"; document.getElementById("timedWeeklyTime").value = tpl.cycleTime || "09:00"; }
+        else if (ct === "monthly") { document.getElementById("timedMonthlyDay").value = tpl.cycleMonthDay || "1"; document.getElementById("timedMonthlyTime").value = tpl.cycleTime || "09:00"; }
+        else if (ct === "yearly") { document.getElementById("timedYearlyMonth").value = tpl.cycleYearMonth || "1"; document.getElementById("timedYearlyDay").value = tpl.cycleYearDay || "1"; document.getElementById("timedYearlyTime").value = tpl.cycleTime || "09:00"; }
+      } else if (mode === "interval") {
+        document.getElementById("timedIntVal").value = tpl.intVal || 30;
+        document.getElementById("timedIntUnit").value = tpl.intUnit || "min";
+      } else if (mode === "once") {
+        document.getElementById("timedOnce").value = tpl.onceAt || "";
+      }
+      _pendingTemplate = { templateId: tpl.id || "", sourceType: "template" };
+      setModalStatus("timedModalStatus", "已套用模板「" + (tpl.name||"") + "」，可调整后保存", "ok");
+    }
+    function saveAsTemplate() {
+      const name = document.getElementById("timedName").value.trim();
+      if (!name) { setModalStatus("timedModalStatus", "请先填写任务名称再保存为模板", "err"); return; }
+      const modeBtn = document.querySelector("#timedFreqSeg .seg-btn.active");
+      const freqMode = modeBtn ? modeBtn.dataset.mode : "cycle";
+      const tpl = { id: genId(), name: name, desc: "用户自配置模板", prompt: document.getElementById("timedPrompt").value.trim(), agent: document.getElementById("timedAgent").value || "zhhs_01", freqMode: freqMode };
+      if (freqMode === "cycle") {
+        const typeBtn = document.querySelector("#timedCycleSeg .seg-btn.active");
+        tpl.cycleType = typeBtn ? typeBtn.dataset.type : "daily";
+        tpl.cycleTime = (tpl.cycleType === "weekly" ? document.getElementById("timedWeeklyTime").value : tpl.cycleType === "monthly" ? document.getElementById("timedMonthlyTime").value : tpl.cycleType === "yearly" ? document.getElementById("timedYearlyTime").value : document.getElementById("timedDailyTime").value) || "09:00";
+        if (tpl.cycleType === "weekly") tpl.cycleWeekDay = document.getElementById("timedWeeklyDay").value || "1";
+        if (tpl.cycleType === "monthly") tpl.cycleMonthDay = document.getElementById("timedMonthlyDay").value || "1";
+        if (tpl.cycleType === "yearly") { tpl.cycleYearMonth = document.getElementById("timedYearlyMonth").value || "1"; tpl.cycleYearDay = document.getElementById("timedYearlyDay").value || "1"; }
+      } else if (freqMode === "interval") {
+        tpl.intVal = parseInt(document.getElementById("timedIntVal").value, 10) || 30;
+        tpl.intUnit = document.getElementById("timedIntUnit").value || "min";
+      } else if (freqMode === "once") {
+        tpl.onceAt = document.getElementById("timedOnce").value || "";
+      }
+      const list = getUserTemplates(); list.unshift(tpl); setUserTemplates(list);
+      setModalStatus("timedModalStatus", "已保存为模板「" + name + "」，可在「从模板新建 → 我的」选用", "ok");
+    }
+    (function () {
+      const pickerBtn = document.getElementById("tplPickerBtn");
+      if (pickerBtn) pickerBtn.addEventListener("click", () => openTplPicker("system"));
+      const saveTplBtn = document.getElementById("saveAsTemplateBtn");
+      if (saveTplBtn) saveTplBtn.addEventListener("click", saveAsTemplate);
+      if (tplMask) {
+        tplMask.addEventListener("click", (e) => { if (e.target === tplMask) closeTplPicker(); });
+        const c = document.getElementById("tplClose"); if (c) c.addEventListener("click", closeTplPicker);
+        document.getElementById("tplTabs").addEventListener("click", (e) => { const t = e.target.closest(".tpl-tab"); if (t) openTplPicker(t.dataset.src); });
+        document.getElementById("tplGrid").addEventListener("click", (e) => {
+          const card = e.target.closest(".tpl-card"); if (!card) return;
+          let arr; const src = card.dataset.src;
+          if (src === "user") arr = getUserTemplates();
+          else if (src === "kanban") arr = kanbanAsTemplates();
+          else arr = TIMED_TEMPLATES;
+          const idx = parseInt(card.dataset.idx, 10);
+          if (arr[idx]) applyTemplate(arr[idx]);
+        });
+      }
+    })();
+    // —— P4 发布能力：定时任务执行结果 → 场景看板（统一 boardView 模型，upsert by sourceRef，publishVersion+1）——
+    function publishToKanban(timedId) {
+      const list = getTimed();
+      const i = list.findIndex(t => t.id === timedId); if (i < 0) return;
+      const rec = list[i];
+      const run = (rec.runs || []).find(r => r.status === "success");
+      if (!run) { alert("任务尚未成功执行，无法发布。请先运行成功后再发布。"); return; }
+      const kb = getKanban();
+      const now = Date.now();
+      const boardView = { type: "conversation", config: null, data: { text: (run.output && run.output.text) || "" }, generatedAt: now, sourceRef: rec.id };
+      const existingIdx = rec.publishedTo ? kb.findIndex(s => s.id === rec.publishedTo) : -1;
+      let scene, verb;
+      if (existingIdx >= 0) {
+        scene = Object.assign({}, kb[existingIdx], {
+          title: rec.name, desc: rec.prompt || kb[existingIdx].desc || "定时任务发布",
+          boardView: boardView, sourceRef: rec.id,
+          publishVersion: (kb[existingIdx].publishVersion || 0) + 1, updatedAt: now, status: "done"
+        });
+        kb[existingIdx] = scene; verb = "更新发布";
+      } else {
+        scene = { id: genId(), title: rec.name, desc: rec.prompt || "定时任务发布", status: "done", prio: "mid", assignee: "", sub: 0, enabled: true, category: "", tags: "定时任务", goal: "", members: "", links: "", notes: "", createdAt: now, updatedAt: now, bizType: "存量运营", boardView: boardView, popularity: 0, sourceRef: rec.id, publishVersion: 1, isTemplate: false };
+        kb.unshift(scene); verb = "发布";
+      }
+      setKanban(kb);
+      rec.publishedTo = scene.id; rec.publishVersion = scene.publishVersion;
+      list[i] = rec; setTimed(list); renderTimed();
+      const pb = document.getElementById("rdPublishBtn"); if (pb) pb.textContent = "更新发布";
+      alert("已" + verb + "到场景看板（版本 v" + scene.publishVersion + "），前往「场景看板」可查看。");
+    }
+    // —— 对话产出 → 回写 boardView（打通 Excel/对话 → 场景看板）——
+    // _boundSceneId：P7「开始创建」保存场景后绑定；sendHome 成功完成后把 agent 回复写回该场景 boardView，一次性。
+    let _boundSceneId = null;
+    function writeBackBoardView(sceneId, text) {
+      if (!sceneId || !text || !text.trim()) return;
+      const list = getKanban();
+      const i = list.findIndex(t => t.id === sceneId); if (i < 0) return;
+      const now = Date.now();
+      list[i] = Object.assign({}, list[i], {
+        boardView: { type: "conversation", config: null, data: { text: text }, generatedAt: now, sourceRef: list[i].sourceRef || ("conv_" + sceneId) },
+        status: "done",
+        isDraft: true,
+        updatedAt: now
+      });
+      setKanban(list);
+      if (typeof addSystemNote === "function") addSystemNote("✅ 已更新看板草稿「" + (list[i].title || "") + "」。继续对话可调整，满意后点「发布看板」固化。");
+      // 持续绑定：不清空 _boundSceneId，支持多轮调整；发布或新建对话时清空
+    }
+    function publishScene(sceneId) {
+      const list = getKanban();
+      const i = list.findIndex(t => t.id === sceneId); if (i < 0) return;
+      const now = Date.now();
+      list[i] = Object.assign({}, list[i], { isDraft: false, publishVersion: (list[i].publishVersion || 0) + 1, updatedAt: now });
+      setKanban(list);
+      if (typeof _boundSceneId !== "undefined" && _boundSceneId === sceneId) _boundSceneId = null;
+      renderKanban();
+      alert("已发布看板「" + (list[i].title || "") + "」（v" + list[i].publishVersion + "）。");
+    }
     (function () {
       const m = document.getElementById("resultDrawerMask");
       if (m) {
@@ -2414,6 +2702,33 @@
         if (error) { console.warn('[cloud-state] get failed', error); return null; }
         return (data && data.payload) ? data.payload : { conversations: [], agents: [] };
       } catch (e) { console.warn('[cloud-state] get failed', e); return null; }
+    }
+    // —— E5 真订阅刷新：看板视图激活时轮询云端，发现更新自动刷新（复用 cloudGetState，无新增后端）——
+    let _kanbanPollTimer = null;
+    async function pollKanbanUpdate() {
+      const st = await cloudGetState();
+      if (!st || !Array.isArray(st.kanban)) return;
+      const local = getKanban();
+      let changed = false;
+      const merged = st.kanban.map(remote => {
+        const lo = local.find(t => t.id === remote.id);
+        if (!lo) { changed = true; return remote; }
+        if ((remote.updatedAt || 0) > (lo.updatedAt || 0)) { changed = true; return remote; }
+        return lo;
+      });
+      local.forEach(lo => { if (!merged.find(t => t.id === lo.id)) merged.push(lo); });
+      if (changed) { setKanban(merged); renderKanban(); }
+    }
+    function startKanbanPoll() {
+      stopKanbanPoll();
+      const badge = document.getElementById("kanbanSyncBadge");
+      if (badge) badge.style.display = "";
+      _kanbanPollTimer = setInterval(pollKanbanUpdate, 30000);
+    }
+    function stopKanbanPoll() {
+      if (_kanbanPollTimer) { clearInterval(_kanbanPollTimer); _kanbanPollTimer = null; }
+      const badge = document.getElementById("kanbanSyncBadge");
+      if (badge) badge.style.display = "none";
     }
     let _cloudSaveTimer = null;
     // 防抖合并写入：短时多次写入（连续编辑 Agent / 会话）合并为一次 rdb upsert，
@@ -2560,7 +2875,31 @@
     }
 
     // 看板筛选/搜索状态（移植自 yanxi「我的项目」的状态 tab + 搜索）
-    const kbState = { filter: "all", q: "" };
+    const kbState = { filter: "all", q: "", viewMode: "grid" };
+
+    // —— P5 业务类型维度条：从 getBizTypes() 动态生成，支持「+」新增 ——
+    function renderBizTabs() {
+      const wrap = document.getElementById("kbTabs"); if (!wrap) return;
+      const types = getBizTypes();
+      const all = getKanban();
+      const cnt = (biz) => biz === "all" ? all.length : all.filter(t => (t.bizType || "存量运营") === biz).length;
+      let html = '<button class="kb-tab' + (kbState.filter === "all" ? " active" : "") + '" data-f="all">全部<span class="kb-tab-cnt">' + cnt("all") + '</span></button>';
+      types.forEach(b => {
+        html += '<button class="kb-tab' + (kbState.filter === b ? " active" : "") + '" data-f="' + escapeHtml(b) + '">' + escapeHtml(b) + '<span class="kb-tab-cnt">' + cnt(b) + '</span></button>';
+      });
+      html += '<button class="kb-tab-add" id="kbBizAdd" title="新增业务类型">+</button>';
+      wrap.innerHTML = html;
+    }
+    function addBizType() {
+      const name = prompt("输入新增的业务类型名称：");
+      if (!name || !name.trim()) return;
+      const n = name.trim();
+      const list = getBizTypes();
+      if (list.indexOf(n) >= 0) { alert("该业务类型已存在"); return; }
+      list.push(n); setBizTypes(list);
+      kbState.filter = n;
+      renderKanban();
+    }
 
     function renderKanban() {
       const all = getKanban();
@@ -2569,45 +2908,39 @@
       set("kbDone", all.filter(t => t.status === "done").length);
       set("kbDoing", all.filter(t => t.status === "doing").length);
       set("kbWait", all.filter(t => t.status === "wait").length);
-      // 状态 tab 计数徽章（与 yanxi byStatus 一致）
-      set("kbCntAll", all.length);
-      set("kbCntWait", all.filter(t => t.status === "wait").length);
-      set("kbCntDoing", all.filter(t => t.status === "doing").length);
-      set("kbCntDone", all.filter(t => t.status === "done").length);
+      renderBizTabs();
       const board = document.getElementById("kanbanBoard");
       if (!board) return;
       const q = kbState.q.trim().toLowerCase();
       const matched = all.filter(t => {
-        if (kbState.filter !== "all" && t.status !== kbState.filter) return false;
+        if (kbState.filter !== "all" && (t.bizType || "存量运营") !== kbState.filter) return false;
         if (!q) return true;
         return (t.title || "").toLowerCase().includes(q)
           || (t.desc || "").toLowerCase().includes(q)
           || (t.assignee || "").toLowerCase().includes(q);
       });
-      // 单状态筛选时呈现 yanxi 风格卡片网格（列表视图）；全部时呈现三列看板
-      if (kbState.filter !== "all") {
-        board.className = "kb-list";
-        board.innerHTML = matched.length
-          ? matched.map(cardHtml).join("")
-          : '<div class="kb-noresult">该状态下没有匹配的场景，换个关键词或清除筛选试试。</div>';
-        return;
-      }
       board.className = "board";
       if (!matched.length) {
         board.innerHTML = '<div class="kb-noresult">没有匹配' + (q ? '「' + escapeHtml(kbState.q.trim()) + '」' : '') + '的场景，换个关键词或清除筛选试试。</div>';
         return;
       }
-      const cols = [
-        { key: "wait", title: "待运行" },
-        { key: "doing", title: "进行中" },
-        { key: "done", title: "已完成" },
-      ];
-      board.innerHTML = cols.map(col => {
-        const items = matched.filter(t => t.status === col.key);
-        const body = items.length ? items.map(cardHtml).join("") : '<div class="board-empty">暂无场景</div>';
-        return '<div class="board-col"><div class="board-col-head"><span class="t">' + col.title +
-          '</span><span class="cnt">' + items.length + '</span></div><div class="board-col-body">' + body + '</div></div>';
-      }).join("");
+      // P6：按热门度降序（popularity + 0.3×publishVersion），同分按 updatedAt 兜底
+      const sorted = matched.slice().sort((a, b) => {
+        const sa = (a.popularity || 0) + 0.3 * (a.publishVersion || 0);
+        const sb = (b.popularity || 0) + 0.3 * (b.publishVersion || 0);
+        if (sb !== sa) return sb - sa;
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+      });
+      if (kbState.viewMode === "list") {
+        board.className = "kb-list";
+        board.innerHTML = '<div class="kv-back"><button class="link-btn" data-act="back">← 返回宫格</button></div>' +
+          (sorted.length ? sorted.map(cardHtml).join("") : '<div class="kb-noresult">没有匹配的场景。</div>');
+        return;
+      }
+      const top5 = sorted.slice(0, 5);
+      board.className = "kv-grid";
+      board.innerHTML = top5.map(miniVizCard).join("") +
+        '<div class="kv-card kv-more" data-act="more"><div class="kv-more-plus">+</div><div class="kv-more-label">更多</div></div>';
     }
     function cardHtml(t) {
       const sm = STATUS_META[t.status] || STATUS_META.wait;
@@ -2619,18 +2952,45 @@
         : t.status === "doing" ? "linear-gradient(90deg,#18191C,#3a3d44)"
         : "linear-gradient(90deg,#F59E0B,#fbbf24)";
       const disabled = t.enabled === false;
+      // 列表视图也展示看板内容摘要（P6 缺口：之前列表只读 desc，不读 boardView，看起来空白）
+      const hasBoard = t.boardView && t.boardView.data && t.boardView.data.text;
+      const boardPreview = hasBoard ? '<div class="t-board-preview">' + escapeHtml((t.boardView.data.text || "").slice(0, 160)) + ((t.boardView.data.text || "").length > 160 ? '…' : '') + '</div>' : '';
       return '<div class="task-card' + (disabled ? ' disabled' : '') + '" data-id="' + t.id + '">' +
         '<div class="task-top" style="background:' + grad + '"></div>' +
         '<div class="task-body">' +
           '<div class="t-title">' + escapeHtml(t.title) + ' <span class="pill ' + sm.cls + '">' + sm.label + '</span> <span class="t-prio ' + pm.cls + '">' + pm.label + '</span>' + (disabled ? ' <span class="pill off">已停用</span>' : '') + '</div>' +
           '<div class="t-desc">' + escapeHtml(t.desc || "（无描述）") + '</div>' +
+          boardPreview +
           (t.category || t.tags ? '<div class="t-meta">' + (t.category ? '<span class="m-tag cat">' + escapeHtml(t.category) + '</span>' : '') + (t.tags ? t.tags.split(/[,，]/).map(function(x){return x.trim();}).filter(Boolean).map(function(x){return '<span class="m-tag">' + escapeHtml(x) + '</span>';}).join("") : '') + '</div>' : '') +
           '<div class="task-foot"><span>' + assignee + '</span><span>' + sub + '</span></div>' +
           '<div class="task-time">更新于 ' + updated + '</div>' +
           '<div class="task-acts" style="margin-top:10px;">' +
+            (t.isDraft ? '<button class="link-btn" data-act="publish">发布</button>' : '') +
             '<button class="link-btn" data-act="edit">编辑</button>' +
             '<button class="link-btn danger" data-act="del">删除</button>' +
           '</div>' +
+        '</div></div>';
+    }
+    // —— P6 迷你可视化卡（宫格用）：有 boardView 渲染文本预览，无则状态色条形缩略 ——
+    function renderMiniBars(t) {
+      const color = t.status === "done" ? "#0EA5E9" : t.status === "doing" ? "#18191C" : "#F59E0B";
+      const hs = [42, 68, 35, 82, 55, 73, 48];
+      return '<div class="kv-bars">' + hs.map(v => '<span style="height:' + v + '%;background:' + color + '"></span>').join("") + '</div>';
+    }
+    function miniVizCard(t) {
+      const sm = STATUS_META[t.status] || STATUS_META.wait;
+      const hasBoard = t.boardView && t.boardView.data && t.boardView.data.text;
+      let viz;
+      if (hasBoard) {
+        const cj = firstChartJson(t.boardView.data.text);
+        viz = cj ? '<div class="kv-mini-chart">' + renderChartSVG(cj) + '</div>' : '<div class="kv-text">' + escapeHtml((t.boardView.data.text || "").slice(0, 120)) + '…</div>';
+      } else { viz = renderMiniBars(t); }
+      return '<div class="kv-card" data-id="' + t.id + '" data-act="preview">' +
+        '<div class="kv-viz">' + viz + '</div>' +
+        '<div class="kv-body">' +
+          '<div class="kv-title">' + escapeHtml(t.title) + '</div>' +
+          '<div class="kv-meta"><span class="pill ' + sm.cls + '">' + sm.label + '</span>' + (t.isDraft ? '<span class="pill off">编辑中</span>' : '') + (t.bizType ? '<span class="kv-biz">' + escapeHtml(t.bizType) + '</span>' : '') + '</div>' +
+          (t.isDraft ? '<button class="kv-publish-btn" data-act="publish">发布看板</button>' : '') +
         '</div></div>';
     }
 
@@ -2811,10 +3171,146 @@
 
     // —— 看板任务弹窗 ——
     const taskModal = document.getElementById("taskModal");
+    // —— 可视化图表渲染：boardView 内 ```chart JSON 代码块 → SVG（bar/line/pie）——
+    function renderBarChart(labels, values) {
+      const W=320,H=160,pad=26,bw=Math.min(28,(W-pad*2)/values.length-6),max=Math.max.apply(null,values.concat([1]));
+      const n=values.length, barArea=W-pad*2, gap=(barArea-bw*n)/Math.max(1,n+1), baseY=H-pad;
+      let bars='';
+      values.forEach((v,i)=>{ const h=(v/max)*(H-pad*2); const x=pad+gap+i*(bw+gap), y=baseY-h;
+        bars+='<rect class="viz-bar" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw+'" height="'+h.toFixed(1)+'" rx="2"/>';
+        bars+='<text class="viz-bar-val" x="'+(x+bw/2).toFixed(1)+'" y="'+(y-4).toFixed(1)+'" text-anchor="middle" font-size="9">'+v+'</text>';
+        bars+='<text class="viz-axis-label" x="'+(x+bw/2).toFixed(1)+'" y="'+(baseY+12).toFixed(1)+'" text-anchor="middle" font-size="9">'+escapeHtml(String(labels[i]||'').slice(0,5))+'</text>'; });
+      return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:420px"><line class="viz-axis" x1="'+pad+'" y1="'+baseY+'" x2="'+(W-pad)+'" y2="'+baseY+'"/>'+bars+'</svg>';
+    }
+    function renderLineChart(labels, values) {
+      const W=320,H=160,pad=26,max=Math.max.apply(null,values.concat([1])),min=Math.min.apply(null,values.concat([0]));
+      const n=values.length, stepX=(W-pad*2)/Math.max(1,n-1), baseY=H-pad;
+      let pts='',dots='';
+      values.forEach((v,i)=>{ const x=pad+i*stepX, y=baseY-(v-min)/(max-min||1)*(H-pad*2);
+        pts+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1); dots+='<circle class="viz-dot" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3"/>'; });
+      return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:420px"><path class="viz-line" d="'+pts+'" fill="none" stroke-width="2"/>'+dots+'</svg>';
+    }
+    function renderPieChart(labels, values) {
+      const total=values.reduce((a,b)=>a+b,0)||1, cx=70, cy=70, r=60;
+      let a=-90, slices='', legend='';
+      values.forEach((v,i)=>{ const ang=(v/total)*360, a2=a+ang, rad=a*Math.PI/180, rad2=a2*Math.PI/180, s='viz-s'+(i%8+1);
+        const x1=cx+r*Math.cos(rad), y1=cy+r*Math.sin(rad), x2=cx+r*Math.cos(rad2), y2=cy+r*Math.sin(rad2), large=ang>180?1:0;
+        slices+='<path class="'+s+'" d="M'+cx+' '+cy+' L'+x1.toFixed(1)+' '+y1.toFixed(1)+' A'+r+' '+r+' 0 '+large+' 1 '+x2.toFixed(1)+' '+y2.toFixed(1)+' Z"/>';
+        legend+='<div class="pie-item"><span class="pie-dot '+s+'"></span>'+escapeHtml(String(labels[i]||''))+' '+((v/total)*100).toFixed(0)+'%</div>'; a=a2; });
+      return '<div class="pie-wrap"><svg viewBox="0 0 140 140" width="140" height="140">'+slices+'</svg><div class="pie-legend">'+legend+'</div></div>';
+    }
+    function renderChartSVG(c) {
+      if (!c || !c.type || !Array.isArray(c.values)) return '<div class="chart-err">图表数据无效（需 type 与 values 数组）</div>';
+      const labels = c.labels || c.values.map((_,i)=>i+1);
+      const title = c.title ? '<div class="chart-title">' + escapeHtml(c.title) + '</div>' : '';
+      if (c.type === 'bar') return title + renderBarChart(labels, c.values);
+      if (c.type === 'line') return title + renderLineChart(labels, c.values);
+      if (c.type === 'pie') return title + renderPieChart(labels, c.values);
+      return '<div class="chart-err">不支持的图表类型: ' + escapeHtml(c.type) + '（支持 bar/line/pie）</div>';
+    }
+    // —— ECharts 富图表渲染（预览层用，宫格仍用 SVG 缩略，平衡性能与美观）——
+    const _echartsData = {};
+    const _echartsInstances = [];
+    if (typeof window !== "undefined" && !window._echartsResizeBound) {
+      window.addEventListener("resize", function () {
+        _echartsInstances.forEach(function (ch) { try { ch.resize(); } catch (e) {} });
+      });
+      window._echartsResizeBound = true;
+    }
+    function buildEChartsOption(c) {
+      var VIZ_PALETTE = ["#378ADD","#1D9E75","#BA7517","#D4537E","#534AB7","#639922","#E24B4A","#888780"];
+      if (!c || !c.type || !Array.isArray(c.values)) return {};
+      var labels = c.labels || c.values.map(function (_, i) { return i + 1; });
+      var title = c.title ? { text: c.title, left: "center", textStyle: { fontSize: 13, fontWeight: 500, color: "#18191C" } } : null;
+      var grid = { left: 44, right: 20, top: title ? 48 : 24, bottom: 36 };
+      if (c.type === "bar") {
+        return { title: title, tooltip: { trigger: "axis" }, grid: grid,
+          xAxis: { type: "category", data: labels, axisLabel: { fontSize: 11, color: "#6B7075" } },
+          yAxis: { type: "value", axisLabel: { fontSize: 11, color: "#6B7075" }, splitLine: { lineStyle: { color: "#ECECEC" } } },
+          series: [{ type: "bar", data: c.values, itemStyle: { color: VIZ_PALETTE[0], borderRadius: [3,3,0,0] }, label: { show: true, position: "top", fontSize: 10, color: "#185FA5" } }],
+          color: [VIZ_PALETTE[0]] };
+      }
+      if (c.type === "line") {
+        return { title: title, tooltip: { trigger: "axis" }, grid: grid,
+          xAxis: { type: "category", data: labels, axisLabel: { fontSize: 11, color: "#6B7075" } },
+          yAxis: { type: "value", axisLabel: { fontSize: 11, color: "#6B7075" }, splitLine: { lineStyle: { color: "#ECECEC" } } },
+          series: [{ type: "line", data: c.values, smooth: true, symbolSize: 6, lineStyle: { width: 2 }, itemStyle: { color: VIZ_PALETTE[1] } }],
+          color: [VIZ_PALETTE[1]] };
+      }
+      if (c.type === "pie") {
+        var data = labels.map(function (l, i) { return { name: l, value: c.values[i] }; });
+        return { title: title, tooltip: { trigger: "item", formatter: "{b}: {c} ({d}%)" },
+          legend: { bottom: 4, type: "scroll", textStyle: { fontSize: 11, color: "#6B7075" } },
+          series: [{ type: "pie", radius: ["36%", "62%"], center: ["50%", "46%"], data: data, label: { formatter: "{b}\n{d}%", fontSize: 10, color: "#18191C" }, labelLine: { length: 8, length2: 8 } }],
+          color: VIZ_PALETTE };
+      }
+      return {};
+    }
+    function renderChartECharts(c) {
+      if (typeof echarts === "undefined") return renderChartSVG(c);
+      if (!c || !c.type || !Array.isArray(c.values)) return '<div class="chart-err">图表数据无效（需 type 与 values 数组）</div>';
+      var id = "echarts_" + Math.random().toString(36).slice(2, 9);
+      _echartsData[id] = c;
+      return '<div class="echarts-box" id="' + id + '"></div>';
+    }
+    function initEChartsContainers(root) {
+      if (typeof echarts === "undefined") return;
+      var boxes = (root || document).querySelectorAll(".echarts-box:not([data-inited])");
+      boxes.forEach(function (box) {
+        box.setAttribute("data-inited", "1");
+        var id = box.id; var c = _echartsData[id]; if (!c) return;
+        try { var chart = echarts.init(box); chart.setOption(buildEChartsOption(c)); _echartsInstances.push(chart); }
+        catch (e) { box.innerHTML = '<div class="chart-err">图表渲染失败</div>'; }
+      });
+    }
+    function disposeEChartsInstances() {
+      while (_echartsInstances.length) { try { _echartsInstances.pop().dispose(); } catch (e) {} }
+    }
+    // 兼容旧调用名
+    function renderChart(c) { return renderChartSVG(c); }
+    // 拆出 ```chart JSON 块 → SVG 图表，其余走 marked；兼容纯文本（无 chart 块时等同 marked）
+    function renderBoardContent(text) {
+      if (!text) return '';
+      const parts=[]; const re=/```chart\s*\n([\s\S]*?)```/g; let last=0,m;
+      while((m=re.exec(text))){ if(m.index>last) parts.push({t:'md',v:text.slice(last,m.index)});
+        try{ parts.push({t:'chart',v:JSON.parse(m[1])}); }catch(e){ parts.push({t:'md',v:m[0]}); }
+        last=m.index+m[0].length; }
+      if(last<text.length) parts.push({t:'md',v:text.slice(last)});
+      return parts.map(p=> p.t==='chart' ? '<div class="chart-box">'+renderChartECharts(p.v)+'</div>' : (typeof marked!=='undefined'&&marked.parse?marked.parse(p.v):'<pre>'+escapeHtml(p.v)+'</pre>')).join('');
+    }
+    function firstChartJson(text){ const m=/```chart\s*\n([\s\S]*?)```/.exec(text||''); if(!m) return null; try{return JSON.parse(m[1]);}catch(e){return null;} }
+    // —— P7 场景预览层：渲染完整 boardView ——
+    function openScenePreview(rec) {
+      const mask = document.getElementById("scenePreviewMask"); if (!mask) return;
+      const body = document.getElementById("scenePreviewBody");
+      const sm = STATUS_META[rec.status] || STATUS_META.wait;
+      const hasBoard = rec.boardView && rec.boardView.data && rec.boardView.data.text;
+      let viz;
+      if (hasBoard) {
+        viz = renderBoardContent(rec.boardView.data.text);
+      } else {
+        viz = '<div class="sp-empty">该场景暂无可视化内容。可由「新建对话」产出或「定时任务发布」生成。</div>';
+      }
+      body.innerHTML =
+        '<div class="sp-head"><div class="sp-title">' + escapeHtml(rec.title) + '</div>' +
+        '<div class="sp-meta"><span class="pill ' + sm.cls + '">' + sm.label + '</span>' + (rec.bizType ? '<span class="sp-biz">' + escapeHtml(rec.bizType) + '</span>' : '') + (rec.sourceRef ? '<span>来源：定时任务发布</span>' : '') + '</div></div>' +
+        '<div class="sp-viz">' + viz + '</div>' +
+        '<div class="sp-desc">' + (rec.desc ? escapeHtml(rec.desc) : "（无描述）") + '</div>';
+      mask.classList.remove("hidden");
+      initEChartsContainers(body);
+    }
+    function closeScenePreview() { const mask = document.getElementById("scenePreviewMask"); if (mask) mask.classList.add("hidden"); disposeEChartsInstances(); }
+    (function () {
+      const m = document.getElementById("scenePreviewMask");
+      if (m) { m.addEventListener("click", function (e) { if (e.target === m) closeScenePreview(); }); const c = document.getElementById("scenePreviewClose"); if (c) c.addEventListener("click", closeScenePreview); }
+    })();
     function openTaskModal(record) {
       const isEdit = !!record;
       document.getElementById("taskModalTitle").textContent = isEdit ? "编辑场景" : "新建场景";
-      document.getElementById("taskModalSubmit").textContent = isEdit ? "保存修改" : "创建场景";
+      // P7：业务分类下拉从 getBizTypes 动态填充（替代原静态分类枚举）
+      const cat = document.getElementById("taskCategory");
+      const bizTypes = getBizTypes();
+      cat.innerHTML = bizTypes.map(b => '<option value="' + escapeHtml(b) + '">' + escapeHtml(b) + '</option>').join("");
       document.getElementById("taskId").value = isEdit ? record.id : "";
       document.getElementById("taskTitle").value = isEdit ? (record.title || "") : "";
       document.getElementById("taskDesc").value = isEdit ? (record.desc || "") : "";
@@ -2822,23 +3318,28 @@
       document.getElementById("taskPrio").value = isEdit ? (record.prio || "mid") : "mid";
       document.getElementById("taskAssignee").value = isEdit ? (record.assignee || "") : "";
       document.getElementById("taskSub").value = isEdit ? (record.sub || 0) : 0;
-      document.getElementById("taskCategory").value = isEdit ? (record.category || "") : "";
+      document.getElementById("taskCategory").value = isEdit ? (record.bizType || record.category || bizTypes[0] || "") : (bizTypes[0] || "");
       document.getElementById("taskTags").value = isEdit ? (record.tags || "") : "";
       document.getElementById("taskGoal").value = isEdit ? (record.goal || "") : "";
       document.getElementById("taskMembers").value = isEdit ? (record.members || "") : "";
       document.getElementById("taskLinks").value = isEdit ? (record.links || "") : "";
       document.getElementById("taskNotes").value = isEdit ? (record.notes || "") : "";
       document.getElementById("taskEnabled").checked = isEdit ? (record.enabled !== false) : true;
+      // P7：新建模式仅 5 字段（名称/描述/业务分类/标签）+「开始创建」；编辑模式全字段 +「保存修改」
+      document.querySelectorAll(".task-edit-only").forEach(el => el.classList.toggle("hidden", !isEdit));
+      document.getElementById("taskModalSubmit").style.display = isEdit ? "" : "none";
+      document.getElementById("taskModalStart").style.display = isEdit ? "none" : "";
       setModalStatus("taskModalStatus", "", "");
       taskModal.classList.remove("hidden");
     }
     function closeTaskModal() { taskModal.classList.add("hidden"); }
     document.getElementById("newTaskBtn").addEventListener("click", () => openTaskModal(null));
-    // —— 看板筛选 tab + 搜索（yanxi「我的项目」风格） ——
+    // —— 看板业务类型维度条 + 搜索 ——
     document.getElementById("kbTabs").addEventListener("click", (e) => {
+      const addBtn = e.target.closest("#kbBizAdd");
+      if (addBtn) { addBizType(); return; }
       const tab = e.target.closest(".kb-tab"); if (!tab) return;
       kbState.filter = tab.dataset.f;
-      document.querySelectorAll("#kbTabs .kb-tab").forEach(b => b.classList.toggle("active", b === tab));
       renderKanban();
     });
     document.getElementById("kbSearch").addEventListener("input", (e) => {
@@ -2879,13 +3380,51 @@
       renderKanban();
       closeTaskModal();
     });
+    // P7：「开始创建」= 保存精简场景（名称/描述/业务分类/标签）+ 跳转新建对话对话框（预填场景上下文）
+    document.getElementById("taskModalStart").addEventListener("click", () => {
+      const title = document.getElementById("taskTitle").value.trim();
+      if (!title) { setModalStatus("taskModalStatus", "请填写场景名称", "err"); return; }
+      const biz = document.getElementById("taskCategory").value;
+      const desc = document.getElementById("taskDesc").value.trim();
+      const now = Date.now();
+      const list = getKanban();
+      const sceneId = genId();
+      list.unshift({ id: sceneId, title: title, desc: desc, status: "wait", prio: "mid", assignee: "", sub: 0, enabled: true, category: biz, bizType: biz, tags: document.getElementById("taskTags").value.trim(), goal: "", members: "", links: "", notes: "", createdAt: now, updatedAt: now, boardView: null, popularity: 0, sourceRef: "", publishVersion: 0, isTemplate: false, sourceType: "conversation", isDraft: true });
+      setKanban(list);
+      _boundSceneId = sceneId; // 绑定：本对话后续 agent 回复回写到此场景看板
+      closeTaskModal();
+      if (typeof newConversation === "function") newConversation();
+      showView("home");
+      const ctx = "基于场景「" + title + "」" + (desc ? "（" + desc + "）" : "") + "展开分析与看板生成。请输出图文并茂的可视化看板：数据图表用 ```chart 代码块（JSON 格式：{\"type\":\"bar\"或\"line\"或\"pie\",\"title\":\"图表标题\",\"labels\":[\"标签1\",\"标签2\"],\"values\":[数值1,数值2]}），可包含多个图表；每个图表下方配文字说明数据含义、趋势与关键结论。这是初版，后续我会通过对话继续调整看板内容，满意后再发布。开始：";
+      if (typeof inputEl !== "undefined" && inputEl) { inputEl.value = ctx; if (typeof autoResize === "function") autoResize(); inputEl.focus(); }
+    });
     document.getElementById("kanbanBoard").addEventListener("click", (e) => {
+      // P6 宫格：更多+ / 返回宫格
+      const moreOrBack = e.target.closest('[data-act="more"], [data-act="back"]');
+      if (moreOrBack) {
+        kbState.viewMode = (moreOrBack.dataset.act === "more") ? "list" : "grid";
+        renderKanban();
+        return;
+      }
+      // P6 宫格卡：点击预览（P7 换专门预览层，现暂复用只读弹窗）
+      const kvCard = e.target.closest(".kv-card");
+      if (kvCard) {
+        const pubBtn = e.target.closest('[data-act="publish"]');
+        if (pubBtn) { publishScene(kvCard.dataset.id); return; }
+        if (kvCard.dataset.act === "preview") {
+          const rec = getKanban().find(t => t.id === kvCard.dataset.id);
+          if (rec) { rec.popularity = (rec.popularity || 0) + 1; setKanban(getKanban().map(t => t.id === rec.id ? rec : t)); openScenePreview(rec); }
+          return;
+        }
+      }
       const card = e.target.closest(".task-card"); if (!card) return;
       const actBtn = e.target.closest("[data-act]"); if (!actBtn) return;
       const id = card.dataset.id;
       const list = getKanban();
       const act = actBtn.dataset.act;
-      if (act === "edit") {
+      if (act === "publish") {
+        publishScene(id);
+      } else if (act === "edit") {
         const rec = list.find(t => t.id === id); if (rec) openTaskModal(rec);
       } else if (act === "del") {
         if (confirm("确定删除该场景？")) { setKanban(list.filter(t => t.id !== id)); renderKanban(); }
@@ -2955,7 +3494,7 @@
       const btn = e.target.closest(".seg-btn"); if (!btn) return;
       setTimedCycleType(btn.dataset.type);
     });
-    document.getElementById("newTimedBtn").addEventListener("click", () => openTimedModal(null, false));
+    document.getElementById("newTimedBtn").addEventListener("click", () => { _pendingTemplate = null; openTimedModal(null, false); });
     document.getElementById("timedModalClose").addEventListener("click", closeTimedModal);
     document.getElementById("timedModalCancel").addEventListener("click", closeTimedModal);
     timedModal.addEventListener("click", (e) => { if (e.target === timedModal) closeTimedModal(); });
@@ -2974,6 +3513,8 @@
         prompt: document.getElementById("timedPrompt").value.trim(),
         activeFrom: document.getElementById("timedFrom").value || "",
         activeTo: document.getElementById("timedTo").value || "",
+        sourceType: (_pendingTemplate && _pendingTemplate.sourceType) || "manual",
+        templateId: (_pendingTemplate && _pendingTemplate.templateId) || "",
       };
       if (freqMode === "cycle") {
         const typeBtn = document.querySelector("#timedCycleSeg .seg-btn.active");
@@ -3023,6 +3564,7 @@
       setTimed(list);
       renderTimed();
       closeTimedModal();
+      _pendingTemplate = null;
     });
     document.getElementById("timedList").addEventListener("click", (e) => {
       const row = e.target.closest(".tr"); if (!row || !row.dataset.id) return;
@@ -3211,6 +3753,7 @@
       return hero;
     }
     function newConversation() {
+      if (typeof _boundSceneId !== "undefined") _boundSceneId = null;
       conversationId = "web-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
       messagesEl.innerHTML = "";
       conversationFilesArr = []; renderConversationFiles(); // 新建会话：清空底部文件区与历史气泡（状态卡随气泡一起清掉）
