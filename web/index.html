@@ -1496,7 +1496,7 @@
     // 定位是「防随机扫描/爬虫」级保护，非强鉴权；强一致鉴权需函数端校验 CloudBase 登录态。
     // 必须与云端环境变量 APP_TOKEN 保持一致；如需轮换在两端同步修改即可。
     const APP_TOKEN = "zhhs-yx-2608";
-    const BUILD_TAG = "2026-08-19-1810"; // 用于打破浏览器缓存
+    const BUILD_TAG = "2026-08-20-0930"; // 用于打破浏览器缓存
 
     // 缓存根治：【URL 版本化】给访问地址追加 ?v=BUILD_TAG，使每次发布命中独立的 CDN 缓存键，
     // 强制回源拿到最新 HTML，从此无需手动强刷。桌面端 file:// 跳过（无 CDN 缓存）。
@@ -2156,7 +2156,7 @@
 
       const sel = AGENT_LIST.find(a => a.id === AGENT_SELECTED_ID) || AGENT_LIST[0] || { botId: BOT_ID, endpoint: AGENT_BASE };
       const chatBase = sel.endpoint || AGENT_BASE;
-      const history = currentMessages.slice(0, -1).map(m => ({ role: m.role, content: m.text }));
+      const history = currentMessages.slice(0, -1).map(m => ({ role: (m.role === "bot" ? "assistant" : (m.role || "user")), content: m.text }));
       const isDirect = !!sel.provider || sel.direct === true;
       // 模型名：agent 显式配了 sel.model（字符串）即用之；否则按供应商兜底（内置 zhipu → ZHIPU_DEFAULT_MODEL）
       const modelName = (typeof sel.model === "string" && sel.model) ? sel.model

@@ -118,7 +118,7 @@ const server = http.createServer((req, res) => {
     if (system) messages.push({ role: 'system', content: system });
     for (const h of history) {
       if (h && h.role && typeof h.content === 'string') {
-        messages.push({ role: h.role === 'assistant' ? 'assistant' : 'user', content: h.content });
+        messages.push({ role: (h.role === 'assistant' || h.role === 'bot') ? 'assistant' : 'user', content: h.content });
       }
     }
     messages.push({ role: 'user', content: prompt });
